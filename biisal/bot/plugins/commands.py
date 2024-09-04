@@ -11,9 +11,21 @@ from pyrogram import filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import UserNotParticipant
 from biisal.utils.file_properties import get_name, get_hash, get_media_file_size
-db = Database(Telegram.DATABASE_URL, Telegram.SESSION_NAME)
 from pyrogram.types import ReplyKeyboardMarkup
 from biisal.vars import bot_name , bisal_channel , bisal_grp
+from FileStream.config import Telegram, Server
+from FileStream.bot import FileStream
+import asyncio
+from typing import (
+    Union
+)
+
+
+from urllib.parse import quote
+
+
+
+db = Database(Telegram.DATABASE_URL, Telegram.SESSION_NAME)
 
 
 SRT_TXT = """<b>ᴊᴀɪ sʜʀᴇᴇ ᴋʀsɴᴀ {}!,
