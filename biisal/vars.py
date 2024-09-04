@@ -33,12 +33,12 @@ class Var(object):
     
     else:
         ON_HEROKU = False
-     FQDN = str(getenv('FQDN', 'vps.hostingup.icu:9097')) if not ON_HEROKU or getenv('FQDN', '') else APP_NAME+'.herokuapp.com'
-    HAS_SSL=bool(getenv('HAS_SSL',False))
+    FQDN = str(getenv('FQDN', 'BIND_ADRESS:PORT')) if not ON_HEROKU or getenv('FQDN', '') else APP_NAME+'.herokuapp.com'
+    HAS_SSL=bool(getenv('HAS_SSL',True))
     if HAS_SSL:
         URL = "https://{}/".format(FQDN)
     else:
-        URL = "http://{}/".format(FQDN)
+        URL = "http://{}/".format(FQDN)  
     DATABASE_URL = str(getenv('DATABASE_URL', 'mongodb+srv://abdulmk184:abdulmk18@cluster0.fv4ffn1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'))
     UPDATES_CHANNEL = str(getenv('UPDATES_CHANNEL', 'bots_up')) 
     BANNED_CHANNELS = list(set(int(x) for x in str(getenv("BANNED_CHANNELS", "")).split()))   
