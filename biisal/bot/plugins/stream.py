@@ -14,7 +14,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 #from utils_bot import get_shortlink
 
 from biisal.utils.file_properties import get_name, get_hash, get_media_file_size
-db = Database(Var.DATABASE_URL, Var.name)
+db = Database(Telegram.DATABASE_URL, Telegram.SESSION_NAME)
 
 
 MY_PASS = os.environ.get("MY_PASS", None)
