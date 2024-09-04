@@ -19,8 +19,6 @@ class Var(object):
     SLEEP_THRESHOLD = int(getenv('SLEEP_THRESHOLD', '60'))
     WORKERS = int(getenv('WORKERS', '4'))
     BIN_CHANNEL = int(getenv('BIN_CHANNEL', '-1001626107740'))
-    STREAM_URL = env.get("STREAM_URL", "https://ddbots.blogspot.com/p/stream.html")
-    DOWNLOAD_URL = env.get("DOWNLOAD", "https://ddbots.blogspot.com/p/download.html")
     NEW_USER_LOG = int(getenv('NEW_USER_LOG', '-1001626107740'))
     PORT = int(getenv('PORT', '9097'))
     BIND_ADRESS = str(getenv('WEB_SERVER_BIND_ADDRESS', '0.0.0.0'))
