@@ -43,4 +43,6 @@ class Var(object):
     UPDATES_CHANNEL = str(getenv('UPDATES_CHANNEL', 'bots_up')) 
     BANNED_CHANNELS = list(set(int(x) for x in str(getenv("BANNED_CHANNELS", "")).split()))   
     BAN_CHNL = list(set(int(x) for x in str(getenv("BAN_CHNL", "")).split())) 
+    STREAM_URL = env.get("STREAM_URL", "https://ddbots.blogspot.com/p/stream.html")
+    DOWNLOAD_URL = env.get("DOWNLOAD", "https://ddbots.blogspot.com/p/download.html")
     BAN_ALERT = str(getenv('BAN_ALERT' , '<b>ʏᴏᴜʀ ᴀʀᴇ ʙᴀɴɴᴇᴅ ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ.Pʟᴇᴀsᴇ ᴄᴏɴᴛᴀᴄᴛ @biisal_bot ᴛᴏ ʀᴇsᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇ!!</b>'))
