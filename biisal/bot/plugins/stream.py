@@ -14,19 +14,7 @@ from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 #from utils_bot import get_shortlink
 
 from biisal.utils.file_properties import get_name, get_hash, get_media_file_size
-from FileStream.config import Telegram, Server
-from FileStream.bot import FileStream
-import asyncio
-from typing import (
-    Union
-)
-
-
-from urllib.parse import quote
-
-
-
-db = Database(Telegram.DATABASE_URL, Telegram.SESSION_NAME)
+db = Database(Var.DATABASE_URL, Var.name)
 
 
 MY_PASS = os.environ.get("MY_PASS", None)
@@ -92,8 +80,8 @@ async def private_receive_handler(c: Client, m: Message):
         return await m.reply(Var.BAN_ALERT)
     try:
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
-        stream_link = f"{Telegram.STREAM_URL}?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        online_link = f"{Telegram.DOWNLOAD_URL}?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        stream_link = f"{Var.URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
         await log_msg.reply_text(text=f"**RᴇQᴜᴇꜱᴛᴇᴅ ʙʏ :** [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n**Uꜱᴇʀ ɪᴅ :** `{m.from_user.id}`\n**Stream ʟɪɴᴋ :** {stream_link}", disable_web_page_preview=True,  quote=True)
         await m.reply_text(
@@ -144,4 +132,3 @@ async def channel_receive_handler(bot, broadcast):
     except Exception as e:
         await bot.send_message(chat_id=Var.BIN_CHANNEL, text=f"**#ERROR_TRACKEBACK:** `{e}`", disable_web_page_preview=True)
         print(f"Cᴀɴ'ᴛ Eᴅɪᴛ Bʀᴏᴀᴅᴄᴀsᴛ Mᴇssᴀɢᴇ!\nEʀʀᴏʀ:  **Give me edit permission in updates and bin Channel!{e}**")
-
