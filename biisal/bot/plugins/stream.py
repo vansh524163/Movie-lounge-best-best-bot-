@@ -92,6 +92,7 @@ async def private_receive_handler(c: Client, m: Message):
         # Generate the stream, download, and share links
         stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
         # Log the request in the BIN_CHANNEL
@@ -113,7 +114,7 @@ async def private_receive_handler(c: Client, m: Message):
                         InlineKeyboardButton('Download 🔻', url=online_link)  # Download Link
                     ],
                     [
-                        InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)  # Corrected Share Link Button
+                        InlineKeyboardButton('⚡ Share Link ⚡', url=file_link)  # Corrected Share Link Button
                     ]
                 ]
             )
