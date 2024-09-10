@@ -44,7 +44,7 @@ class Var(object):
     BANNED_CHANNELS = list(set(int(x) for x in str(getenv("BANNED_CHANNELS", "")).split()))   
     BAN_CHNL = list(set(int(x) for x in str(getenv("BAN_CHNL", "")).split())) 
     BAN_ALERT = str(getenv('BAN_ALERT' , '<b>ʏᴏᴜʀ ᴀʀᴇ ʙᴀɴɴᴇᴅ ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ.Pʟᴇᴀsᴇ ᴄᴏɴᴛᴀᴄᴛ @biisal_bot ᴛᴏ ʀᴇsᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇ!!</b>'))
-    DB_URI = str(getenv('DB_URI', 'mongodb+srv://ayush906898:ayush906898@cluster0.lxzl4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+    DB_URI = str(getenv('DB_URI', 'mongodb+srv://ayush906898:ayush906898@cluster0.lxzl4.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'))
     DB_NAME = str(getenv("DB_NAME", "IllegalDeveloper"))
     SECOND_BOTUSERNAME = str(getenv("SECOND_BOTUSERNAME", "Movielounges_File_Bot"))
     FILE_BOT_TOKEN = str(getenv('FILE_BOT_TOKEN', '7115718185:AAGuJmYH4M3czz_3BXIzZ4o_aAGqrW64Qck'))
