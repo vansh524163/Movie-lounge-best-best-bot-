@@ -2,19 +2,19 @@ import asyncio
 from pyrogram import Client, filters
 from pyrogram.errors import FloodWait, UserIsBlocked, InputUserDeactivated
 from biisal.vars import Var
-from IllegalDeveloper.secondbot_database import add_user, del_user, full_userbase, present_user
+from Rishi.secondbot_database import add_user, del_user, full_userbase, present_user
 
 API_ID = Var.API_ID
 API_HASH = Var.API_HASH
 BOT_TOKEN = Var.FILE_BOT_TOKEN
 
-IllegalDeveloper = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+Rishi = Client("my_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 async def is_admin(user):    
     return user.id in Var.OWNER_ID
     
 # Define a function to handle incoming messages
-@IllegalDeveloper.on_message(filters.command("start"))
+@Rishi.on_message(filters.command("start"))
 async def start_command(client, message):
     id = message.from_user.id
     if not await present_user(id):
@@ -32,7 +32,7 @@ async def start_command(client, message):
         return await client.copy_message(chat_id=message.from_user.id, from_chat_id=int(Var.BIN_CHANNEL), message_id=int(file_id))
 
 
-@IllegalDeveloper.on_message(filters.command("users"))
+@Rishi.on_message(filters.command("users"))
 async def get_users(client, message):
     user = message.from_user
     is_admin_user = await is_admin(user)
@@ -45,7 +45,7 @@ async def get_users(client, message):
     await msg.edit(f"{len(users)} USers Are Useing This Bot")
 
 
-@IllegalDeveloper.on_message(filters.command("broadcast"))
+@Rishi.on_message(filters.command("broadcast"))
 async def send_text(client, message):
     user = message.from_user
     is_admin_user = await is_admin(user)
