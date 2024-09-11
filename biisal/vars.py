@@ -18,7 +18,7 @@ class Var(object):
     name = str(getenv('name', 'File_Press_bot'))
     SLEEP_THRESHOLD = int(getenv('SLEEP_THRESHOLD', '60'))
     WORKERS = int(getenv('WORKERS', '4'))
-    BIN_CHANNEL = int(getenv('BIN_CHANNEL', '-1002242461636'))
+    BIN_CHANNEL = int(getenv('BIN_CHANNEL', '-1001626107740'))
     NEW_USER_LOG = int(getenv('NEW_USER_LOG', '-1001626107740'))
     PORT = int(getenv('PORT', '9097'))
     BIND_ADRESS = str(getenv('WEB_SERVER_BIND_ADDRESS', '0.0.0.0'))
