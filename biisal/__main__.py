@@ -14,7 +14,7 @@ from aiohttp import web
 from .server import web_server
 from .utils.keepalive import ping_server
 from biisal.bot.clients import initialize_clients
-from Rishi.bot import Rishi
+from IllegalDeveloper.bot import Rishi
 
 LOGO = """
  ____ ___ ___ ____    _    _     
@@ -34,7 +34,7 @@ logging.getLogger("aiohttp.web").setLevel(logging.ERROR)
 ppath = "biisal/bot/plugins/*.py"
 files = glob.glob(ppath)
 StreamBot.start()
-Rishi.start()
+IllegalDeveloper.start()
 loop = asyncio.get_event_loop()
 
 
