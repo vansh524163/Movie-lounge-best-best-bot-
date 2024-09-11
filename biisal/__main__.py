@@ -14,7 +14,7 @@ from aiohttp import web
 from .server import web_server
 from .utils.keepalive import ping_server
 from biisal.bot.clients import initialize_clients
-from IllegalDeveloper.bot import Rishi
+from IllegalDeveloper.bot import IllegalDeveloper
 
 LOGO = """
  ____ ___ ___ ____    _    _     
