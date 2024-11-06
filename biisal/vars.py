@@ -44,7 +44,7 @@ class Var(object):
     BANNED_CHANNELS = list(set(int(x) for x in str(getenv("BANNED_CHANNELS", "")).split()))   
     BAN_CHNL = list(set(int(x) for x in str(getenv("BAN_CHNL", "")).split())) 
     BAN_ALERT = str(getenv('BAN_ALERT' , '<b>ʏᴏᴜʀ ᴀʀᴇ ʙᴀɴɴᴇᴅ ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ.Pʟᴇᴀsᴇ ᴄᴏɴᴛᴀᴄᴛ @biisal_bot ᴛᴏ ʀᴇsᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇ!!</b>'))
-    DB_URI = str(getenv('DB_URI', 'mongodb+srv://Mdlal:mdlal@cluster0.v1ure.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'))
+    DB_URI = str(getenv('DB_URI', 'mongodb+srv://abdulmk184:abdulmk18@cluster0.fv4ffn1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'))
     DB_NAME = str(getenv("DB_NAME", "Khalik"))
     SECOND_BOTUSERNAME = str(getenv("SECOND_BOTUSERNAME", "File_Sender_oBot"))
     FILE_BOT_TOKEN = str(getenv('FILE_BOT_TOKEN', '7523273025:AAHjn2IT61OF78JdfY8jf1U4dQgXCy7NNxU'))
