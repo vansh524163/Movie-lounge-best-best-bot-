@@ -129,13 +129,6 @@ await m.reply_text(
         ]
     )
 )
-
-# Add response message
-await m.reply_text(
-    text="✅ Your request has been processed successfully. Please use the above buttons to proceed!",
-    quote=True
-)
-
     except FloodWait as e:
         # Handle Telegram FloodWait errors
         print(f"Sleeping for {str(e.x)}s due to FloodWait")
