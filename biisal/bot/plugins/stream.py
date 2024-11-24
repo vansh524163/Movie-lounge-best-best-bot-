@@ -97,21 +97,21 @@ try:
 
     print(f"Generated Links:\nStream: {stream_link}\nOnline: {online_link}\nShare: {share_link}")
 
-    # Post to external URL
-    url = "https://movietop.link/upcoming-movies"
-    data = {
-        "file_name": quote_plus(get_name(log_msg)),
-        "share_link": share_link,
-    }
-    try:
-        response = requests.post(url, json=data)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"Error sending data to {url}: {e}")
-        await c.send_message(chat_id=Var.BIN_CHANNEL, text=f"Error with file upload: {e}")
-        return
+    # # Post to external URL
+    # url = "https://movietop.link/upcoming-movies"
+    # data = {
+    #     "file_name": quote_plus(get_name(log_msg)),
+    #     "share_link": share_link,
+    # }
+    # try:
+    #     response = requests.post(url, json=data)
+    #     response.raise_for_status()
+    # except Exception as e:
+    #     print(f"Error sending data to {url}: {e}")
+    #     await c.send_message(chat_id=Var.BIN_CHANNEL, text=f"Error with file upload: {e}")
+    #     return
 
-    print(f"Data posted successfully. Response: {response.status_code}, {response.text}")
+    # print(f"Data posted successfully. Response: {response.status_code}, {response.text}")
 
     # Reply to BIN_CHANNEL
     await log_msg.reply_text(
