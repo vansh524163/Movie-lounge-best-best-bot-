@@ -11,12 +11,14 @@ from pyrogram.errors import FloodWait, UserNotParticipant
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from biisal.utils.file_properties import get_name, get_hash, get_media_file_size
 
+# Database Initialization
 db = Database(Var.DATABASE_URL, Var.name)
-
-MY_PASS = os.environ.get("MY_PASS", None)
-pass_dict = {}
 pass_db = Database(Var.DATABASE_URL, "ag_passwords")
 
+# Environment Variables
+MY_PASS = os.environ.get("MY_PASS", None)
+
+# Template for Message Text
 msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 ‣ Fɪʟᴇ ɴᴀᴍᴇ : <i>{}</i>
@@ -27,6 +29,7 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 ‣ ɢᴇᴛ <a href="https://t.me/bots_up">ᴍᴏʀᴇ ғɪʟᴇs</a></b> 🤡"""
 
+# Handler for Private Messages
 @StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
 async def private_receive_handler(c: Client, m: Message):
     try:
@@ -38,7 +41,7 @@ async def private_receive_handler(c: Client, m: Message):
                 f"New User Joined! : \n\n Name : [{m.from_user.first_name}](tg://user?id={m.from_user.id}) Started Your Bot!!"
             )
 
-        # Check if an updates channel is configured
+        # Check for updates channel subscription
         if Var.UPDATES_CHANNEL != "None":
             try:
                 user = await c.get_chat_member(Var.UPDATES_CHANNEL, m.chat.id)
@@ -56,20 +59,13 @@ async def private_receive_handler(c: Client, m: Message):
                     caption="""<b>Hey there!\n\nPlease join our updates channel to use me! 😊\n\nDue to server overload, only our channel subscribers can use this bot!</b>""",
                     reply_markup=InlineKeyboardMarkup(
                         [
-                            [
-                                InlineKeyboardButton("Join Now 🚩", url=f"https://t.me/{Var.UPDATES_CHANNEL}")
-                            ]
+                            [InlineKeyboardButton("Join Now 🚩", url=f"https://t.me/{Var.UPDATES_CHANNEL}")]
                         ]
                     ),
                 )
                 return
             except Exception as e:
                 await m.reply_text(f"Error: {str(e)}")
-                await c.send_message(
-                    chat_id=m.chat.id,
-                    text="**Something went wrong. Contact my Support** [Support](https://t.me/bisal_files)",
-                    disable_web_page_preview=True
-                )
                 return
 
         # Check if the user is banned
@@ -80,62 +76,47 @@ async def private_receive_handler(c: Client, m: Message):
         # Forward the message to the BIN_CHANNEL
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
-        # Generate the stream, download, and share links
+        # Generate Links
         stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
-        # Log the request in the BIN_CHANNEL
-        await log_msg.reply_text(
-            text=f"**Requested by :** [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n**User ID :** `{m.from_user.id}`\n**Stream Link :** {stream_link}",
+        # Reply to the user
+        await m.reply_text(
+            text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
+            quote=True,
             disable_web_page_preview=True,
-            quote=True
-        )
-
-try:
-    # Reply to the user with the stream and download links
-    await m.reply_text(
-        text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
-        quote=True,
-        disable_web_page_preview=True,
-        reply_markup=InlineKeyboardMarkup(
-            [
+            reply_markup=InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton("Stream 🔺", url=stream_link),
-                    InlineKeyboardButton('Download 🔻', url=online_link)
-                ],
-                [
-                    InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
-                ],
-                [
-                    InlineKeyboardButton('Get File', url=file_link)
+                    [
+                        InlineKeyboardButton("Stream 🔺", url=stream_link),
+                        InlineKeyboardButton('Download 🔻', url=online_link)
+                    ],
+                    [
+                        InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
+                    ],
+                    [
+                        InlineKeyboardButton('Get File', url=file_link)
+                    ]
                 ]
-            ]
+            )
         )
-    )
-except FloodWait as e:
-    print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
-    await asyncio.sleep(e.x)
-    await c.send_message(
-        chat_id=Var.BIN_CHANNEL,
-        text=f"Got FloodWait of {str(e.x)} seconds from [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n\n**User ID :** `{str(m.from_user.id)}`",
-        disable_web_page_preview=True
-    )
-except Exception as e:
-    # Catch-all for unexpected issues
-    await m.reply_text(f"An error occurred: {e}")
 
+    except FloodWait as e:
+        print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
+        await asyncio.sleep(e.x)
+    except Exception as e:
+        await m.reply_text(f"An error occurred: {e}")
 
-
-
-@StreamBot.on_message(filters.channel & ~filters.group & (filters.document | filters.video | filters.photo)  & ~filters.forwarded, group=-1)
+# Handler for Channel Messages
+@StreamBot.on_message(filters.channel & ~filters.group & (filters.document | filters.video | filters.photo) & ~filters.forwarded, group=-1)
 async def channel_receive_handler(bot, broadcast):
     if int(broadcast.chat.id) in Var.BAN_CHNL:
-        print("chat trying to get straming link is found in BAN_CHNL,so im not going to give stram link")
+        print("Chat trying to get streaming link is in BAN_CHNL, skipping.")
         return
     ban_chk = await db.is_banned(int(broadcast.chat.id))
-    if (int(broadcast.chat.id) in Var.BANNED_CHANNELS) or (ban_chk == True):
+    if int(broadcast.chat.id) in Var.BANNED_CHANNELS or ban_chk:
         await bot.leave_chat(broadcast.chat.id)
         return
     try:
@@ -143,7 +124,7 @@ async def channel_receive_handler(bot, broadcast):
         stream_link = f"{Var.URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         await log_msg.reply_text(
-            text=f"**Channel Name:** `{broadcast.chat.title}`\n**CHANNEL ID:** `{broadcast.chat.id}`\n**Rᴇǫᴜᴇsᴛ ᴜʀʟ:** {stream_link}",
+            text=f"**Channel Name:** `{broadcast.chat.title}`\n**CHANNEL ID:** `{broadcast.chat.id}`\n**Request URL:** {stream_link}",
             quote=True
         )
         await bot.edit_message_reply_markup(
@@ -151,17 +132,20 @@ async def channel_receive_handler(bot, broadcast):
             message_id=broadcast.id,
             reply_markup=InlineKeyboardMarkup(
                 [
-                    [InlineKeyboardButton("sᴛʀᴇᴀᴍ 🔺", url=stream_link),
-                    InlineKeyboardButton('ᴅᴏᴡɴʟᴏᴀᴅ 🔻', url=online_link)] 
+                    [
+                        InlineKeyboardButton("Stream 🔺", url=stream_link),
+                        InlineKeyboardButton('Download 🔻', url=online_link)
+                    ]
                 ]
             )
         )
     except FloodWait as w:
-        print(f"Sleeping for {str(w.x)}s")
+        print(f"Sleeping for {str(w.x)} seconds due to FloodWait")
         await asyncio.sleep(w.x)
-        await bot.send_message(chat_id=Var.BIN_CHANNEL,
-                            text=f"GOT FLOODWAIT OF {str(w.x)}s FROM {broadcast.chat.title}\n\n**CHANNEL ID:** `{str(broadcast.chat.id)}`",
-                            disable_web_page_preview=True)
     except Exception as e:
-        await bot.send_message(chat_id=Var.BIN_CHANNEL, text=f"**#ERROR_TRACKEBACK:** `{e}`", disable_web_page_preview=True)
-        print(f"Cᴀɴ'ᴛ Eᴅɪᴛ Bʀᴏᴀᴅᴄᴀsᴛ Mᴇssᴀɢᴇ!\nEʀʀᴏʀ:  **Give me edit permission in updates and bin Channel!{e}**")
+        await bot.send_message(
+            chat_id=Var.BIN_CHANNEL,
+            text=f"**#ERROR_TRACEBACK:** `{e}`",
+            disable_web_page_preview=True
+        )
+        print(f"Error: {e}. Ensure proper permissions in BIN_CHANNEL.")
