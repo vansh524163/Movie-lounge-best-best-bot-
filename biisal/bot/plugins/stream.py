@@ -86,62 +86,53 @@ async def private_receive_handler(c: Client, m: Message):
     if ban_chk:
         return await m.reply(Var.BAN_ALERT)
 
-try:
-    # Forward the message
-    log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
+    try:
+        # Forward the message to the BIN_CHANNEL
+        log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
-    # Generate links
-    stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-    online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-    share_link = f"https://ddlink57.blogspot.com/{log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        # Generate the stream, download, and share links
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
+        share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
-    print(f"Generated Links:\nStream: {stream_link}\nOnline: {online_link}\nShare: {share_link}")
+        # Log the request in the BIN_CHANNEL
+        await log_msg.reply_text(
+            text=f"**Requested by :** [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n**User ID :** `{m.from_user.id}`\n**Stream Link :** {stream_link}",
+            disable_web_page_preview=True,
+            quote=True
+        )
 
-    # # Post to external URL
-    # url = "https://movietop.link/upcoming-movies"
-    # data = {
-    #     "file_name": quote_plus(get_name(log_msg)),
-    #     "share_link": share_link,
-    # }
-    # try:
-    #     response = requests.post(url, json=data)
-    #     response.raise_for_status()
-    # except Exception as e:
-    #     print(f"Error sending data to {url}: {e}")
-    #     await c.send_message(chat_id=Var.BIN_CHANNEL, text=f"Error with file upload: {e}")
-    #     return
+        # Reply to the user with the stream and download links
+        await m.reply_text(
+            text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
+            quote=True,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton("Stream 🔺", url=stream_link),  # Stream Link
+                        InlineKeyboardButton('Download 🔻', url=online_link)  # Download Link
+                    ],
+                    [
+                        InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
+                    ],
+                    [
+                        InlineKeyboardButton('Get File', url=file_link)
+                    ]
+                ]
+            )
+        )
 
-    # print(f"Data posted successfully. Response: {response.status_code}, {response.text}")
-
-    # Reply to BIN_CHANNEL
-    await log_msg.reply_text(
-        text=f"**Requested by :** [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n"
-             f"**User ID :** `{m.from_user.id}`\n"
-             f"**Stream Link :** {stream_link}",
-        disable_web_page_preview=True,
-        quote=True
-    )
-
-    # Reply to user
-    await m.reply_text(
-        text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
-        quote=True,
-        disable_web_page_preview=True,
-        reply_markup=InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("Stream 🔺", url=stream_link),
-                InlineKeyboardButton("Download 🔻", url=online_link)
-            ],
-            [InlineKeyboardButton("⚡ Share Link ⚡", url=share_link)]
-        ])
-    )
-except FloodWait as e:
-    print(f"FloodWait: Sleeping for {e.x} seconds.")
-    await asyncio.sleep(e.x)
-except Exception as e:
-    print(f"Unexpected error: {e}")
-    await c.send_message(chat_id=Var.BIN_CHANNEL, text=f"Unexpected error: {e}")
-
+    except FloodWait as e:
+        # Handle Telegram FloodWait errors
+        print(f"Sleeping for {str(e.x)}s due to FloodWait")
+        await asyncio.sleep(e.x)
+        await c.send_message(
+            chat_id=Var.BIN_CHANNEL,
+            text=f"Got FloodWait of {str(e.x)}s from [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n\n**User ID :** `{str(m.from_user.id)}`",
+            disable_web_page_preview=True
+        )
 
 
 @StreamBot.on_message(filters.channel & ~filters.group & (filters.document | filters.video | filters.photo)  & ~filters.forwarded, group=-1)
