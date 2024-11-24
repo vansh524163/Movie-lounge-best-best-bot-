@@ -1,5 +1,3 @@
-#(c) Adarsh-Goel
-#(c) @biisal
 import os
 import asyncio
 from asyncio import TimeoutError
@@ -11,17 +9,15 @@ from urllib.parse import quote_plus
 from pyrogram import filters, Client
 from pyrogram.errors import FloodWait, UserNotParticipant
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-#from utils_bot import get_shortlink
-
 from biisal.utils.file_properties import get_name, get_hash, get_media_file_size
-db = Database(Var.DATABASE_URL, Var.name)
 
+db = Database(Var.DATABASE_URL, Var.name)
 
 MY_PASS = os.environ.get("MY_PASS", None)
 pass_dict = {}
 pass_db = Database(Var.DATABASE_URL, "ag_passwords")
 
-msg_text ="""<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
+msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 ‣ Fɪʟᴇ ɴᴀᴍᴇ : <i>{}</i>
 ‣ Fɪʟᴇ ꜱɪᴢᴇ : {}
@@ -31,62 +27,56 @@ msg_text ="""<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 ‣ ɢᴇᴛ <a href="https://t.me/bots_up">ᴍᴏʀᴇ ғɪʟᴇs</a></b> 🤡"""
 
-
-
-
 @StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
 async def private_receive_handler(c: Client, m: Message):
-    # Check if the user exists in the database, if not, add them
-    if not await db.is_user_exist(m.from_user.id):
-        await db.add_user(m.from_user.id)
-        await c.send_message(
-            Var.BIN_CHANNEL,
-            f"New User Joined! : \n\n Name : [{m.from_user.first_name}](tg://user?id={m.from_user.id}) Started Your Bot!!"
-        )
+    try:
+        # Check if the user exists in the database, if not, add them
+        if not await db.is_user_exist(m.from_user.id):
+            await db.add_user(m.from_user.id)
+            await c.send_message(
+                Var.BIN_CHANNEL,
+                f"New User Joined! : \n\n Name : [{m.from_user.first_name}](tg://user?id={m.from_user.id}) Started Your Bot!!"
+            )
 
-    # Check if an updates channel is configured
-    if Var.UPDATES_CHANNEL != "None":
-        try:
-            user = await c.get_chat_member(Var.UPDATES_CHANNEL, m.chat.id)
-            # If user is banned (kicked) from the updates channel
-            if user.status == "kicked":
+        # Check if an updates channel is configured
+        if Var.UPDATES_CHANNEL != "None":
+            try:
+                user = await c.get_chat_member(Var.UPDATES_CHANNEL, m.chat.id)
+                if user.status == "kicked":
+                    await c.send_message(
+                        chat_id=m.chat.id,
+                        text="You are banned!\n\n  **Contact Support [Support](https://t.me/Movielounge_File_Bot), They Will Help You**",
+                        disable_web_page_preview=True
+                    )
+                    return
+            except UserNotParticipant:
+                await c.send_photo(
+                    chat_id=m.chat.id,
+                    photo="https://telegra.ph/file/5eb253f28ed7ed68cb4e6.png",
+                    caption="""<b>Hey there!\n\nPlease join our updates channel to use me! 😊\n\nDue to server overload, only our channel subscribers can use this bot!</b>""",
+                    reply_markup=InlineKeyboardMarkup(
+                        [
+                            [
+                                InlineKeyboardButton("Join Now 🚩", url=f"https://t.me/{Var.UPDATES_CHANNEL}")
+                            ]
+                        ]
+                    ),
+                )
+                return
+            except Exception as e:
+                await m.reply_text(f"Error: {str(e)}")
                 await c.send_message(
                     chat_id=m.chat.id,
-                    text="You are banned!\n\n  **Contact Support [Support](https://t.me/Movielounge_File_Bot), They Will Help You**",
+                    text="**Something went wrong. Contact my Support** [Support](https://t.me/bisal_files)",
                     disable_web_page_preview=True
                 )
                 return
-        except UserNotParticipant:
-            # If the user is not a participant of the updates channel
-            await c.send_photo(
-                chat_id=m.chat.id,
-                photo="https://telegra.ph/file/5eb253f28ed7ed68cb4e6.png",
-                caption="""<b>Hey there!\n\nPlease join our updates channel to use me! 😊\n\nDue to server overload, only our channel subscribers can use this bot!</b>""",
-                reply_markup=InlineKeyboardMarkup(
-                    [
-                        [
-                            InlineKeyboardButton("Join Now 🚩", url=f"https://t.me/{Var.UPDATES_CHANNEL}")
-                        ]
-                    ]
-                ),
-            )
-            return
-        except Exception as e:
-            # Handle unexpected errors
-            await m.reply_text(f"Error: {str(e)}")
-            await c.send_message(
-                chat_id=m.chat.id,
-                text="**Something went wrong. Contact my Support** [Support](https://t.me/bisal_files)",
-                disable_web_page_preview=True
-            )
-            return
 
-    # Check if the user is banned
-    ban_chk = await db.is_banned(int(m.from_user.id))
-    if ban_chk:
-        return await m.reply(Var.BAN_ALERT)
+        # Check if the user is banned
+        ban_chk = await db.is_banned(int(m.from_user.id))
+        if ban_chk:
+            return await m.reply(Var.BAN_ALERT)
 
-    try:
         # Forward the message to the BIN_CHANNEL
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
@@ -111,8 +101,8 @@ async def private_receive_handler(c: Client, m: Message):
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton("Stream 🔺", url=stream_link),  # Stream Link
-                        InlineKeyboardButton('Download 🔻', url=online_link)  # Download Link
+                        InlineKeyboardButton("Stream 🔺", url=stream_link),
+                        InlineKeyboardButton('Download 🔻', url=online_link)
                     ],
                     [
                         InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
@@ -125,7 +115,6 @@ async def private_receive_handler(c: Client, m: Message):
         )
 
     except FloodWait as e:
-        # Handle Telegram FloodWait errors
         print(f"Sleeping for {str(e.x)}s due to FloodWait")
         await asyncio.sleep(e.x)
         await c.send_message(
@@ -133,6 +122,9 @@ async def private_receive_handler(c: Client, m: Message):
             text=f"Got FloodWait of {str(e.x)}s from [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n\n**User ID :** `{str(m.from_user.id)}`",
             disable_web_page_preview=True
         )
+    except Exception as e:
+        await m.reply_text(f"An error occurred: {e}")
+
 
 
 @StreamBot.on_message(filters.channel & ~filters.group & (filters.document | filters.video | filters.photo)  & ~filters.forwarded, group=-1)
