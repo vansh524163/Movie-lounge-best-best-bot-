@@ -93,37 +93,39 @@ async def private_receive_handler(c: Client, m: Message):
             quote=True
         )
 
-        # Reply to the user with the stream and download links
-        await m.reply_text(
-            text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
-            quote=True,
-            disable_web_page_preview=True,
-            reply_markup=InlineKeyboardMarkup(
+try:
+    # Reply to the user with the stream and download links
+    await m.reply_text(
+        text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
+        quote=True,
+        disable_web_page_preview=True,
+        reply_markup=InlineKeyboardMarkup(
+            [
                 [
-                    [
-                        InlineKeyboardButton("Stream 🔺", url=stream_link),
-                        InlineKeyboardButton('Download 🔻', url=online_link)
-                    ],
-                    [
-                        InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
-                    ],
-                    [
-                        InlineKeyboardButton('Get File', url=file_link)
-                    ]
+                    InlineKeyboardButton("Stream 🔺", url=stream_link),
+                    InlineKeyboardButton('Download 🔻', url=online_link)
+                ],
+                [
+                    InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
+                ],
+                [
+                    InlineKeyboardButton('Get File', url=file_link)
                 ]
-            )
+            ]
         )
+    )
+except FloodWait as e:
+    print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
+    await asyncio.sleep(e.x)
+    await c.send_message(
+        chat_id=Var.BIN_CHANNEL,
+        text=f"Got FloodWait of {str(e.x)} seconds from [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n\n**User ID :** `{str(m.from_user.id)}`",
+        disable_web_page_preview=True
+    )
+except Exception as e:
+    # Catch-all for unexpected issues
+    await m.reply_text(f"An error occurred: {e}")
 
-    except FloodWait as e:
-        print(f"Sleeping for {str(e.x)}s due to FloodWait")
-        await asyncio.sleep(e.x)
-        await c.send_message(
-            chat_id=Var.BIN_CHANNEL,
-            text=f"Got FloodWait of {str(e.x)}s from [{m.from_user.first_name}](tg://user?id={m.from_user.id})\n\n**User ID :** `{str(m.from_user.id)}`",
-            disable_web_page_preview=True
-        )
-    except Exception as e:
-        await m.reply_text(f"An error occurred: {e}")
 
 
 
