@@ -1,5 +1,6 @@
 import os
 import asyncio
+import requests
 from asyncio import TimeoutError
 from biisal.bot import StreamBot
 from biisal.utils.database import Database
@@ -81,6 +82,15 @@ async def private_receive_handler(c: Client, m: Message):
         online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        
+        url = "https://movietop.link/upcoming-movies"
+        data = {
+            "file_name": quote_plus(get_name(log_msg)),  # Corrected syntax for file_name
+            "share_link": share_link,
+        }
+        response = requests.post(url, json=data)
+
+    
 
         # Reply to the user
         await m.reply_text(
@@ -102,6 +112,12 @@ async def private_receive_handler(c: Client, m: Message):
                 ]
             )
         )
+
+        await m.reply_text(
+        text="✅ Your request has been processed successfully. Please use the above buttons to proceed!",
+        quote=True
+    )
+        
 
     except FloodWait as e:
         print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
