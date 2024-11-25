@@ -77,79 +77,53 @@ async def private_receive_handler(c: Client, m: Message):
         # Forward the message to the BIN_CHANNEL
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
-# Generate Links
-stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
-share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        # Generate Links
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
+        share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        
+        url = "https://movietop.link/upcoming-movies"
+        data = {
+            "file_name": format(get_name(log_msg),
+            "share_link": share_link,
+        }
+        response = requests.post(url, json=data)
 
-# API Details
-url = "https://movietop.link/upcoming-movies"
-data = {
-    "file_name": format(get_name(log_msg),
-    "share_link": share_link,
-}
+    
 
-try:
-    # Make the API request
-    response = requests.post(url, json=data)
-    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
-    result = response.json()  # Parse JSON response
+        # Reply to the user
+        await m.reply_text(
+            text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
+            quote=True,
+            disable_web_page_preview=True,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton("Stream 🔺", url=stream_link),
+                        InlineKeyboardButton('Download 🔻', url=online_link)
+                    ],
+                    [
+                        InlineKeyboardButton('⚡ Share Link ⚡', url=share_link)
+                    ],
+                    [
+                        InlineKeyboardButton('Get File', url=file_link)
+                    ]
+                ]
+            )
+        )
 
-    # Reply on success
-    await m.reply_text(
-        text="✅ Your request has been processed successfully. Data stored in the server.",
+        await m.reply_text(
+        text="✅ Your request has been processed successfully. Please use the above buttons to proceed!",
         quote=True
     )
+        
 
-except requests.exceptions.RequestException as e:
-    # Handle HTTP or connection-related errors
-    await m.reply_text(
-        text=f"❌ Failed to process your request.\nError: {str(e)}",
-        quote=True
-    )
-    return  # Exit the function since the request failed
-
-except ValueError:
-    # Handle JSON parsing errors
-    await m.reply_text(
-        text="❌ Server response could not be parsed. Please contact support.",
-        quote=True
-    )
-    return  # Exit the function since the response is invalid
-
-# Try block to process reply with links and buttons
-try:
-    await m.reply_text(
-        text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
-        quote=True,
-        disable_web_page_preview=True,
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton("Stream 🔺", url=stream_link),
-                    InlineKeyboardButton("Download 🔻", url=online_link),
-                ],
-                [
-                    InlineKeyboardButton("⚡ Share Link ⚡", url=share_link),
-                ],
-                [
-                    InlineKeyboardButton("Get File", url=file_link),
-                ],
-            ]
-        ),
-    )
-except FloodWait as e:
-    # Handle Telegram FloodWait exceptions
-    print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
-    await asyncio.sleep(e.x)
-except Exception as e:
-    # Handle any unexpected exceptions
-    await m.reply_text(f"An error occurred: {e}")
-finally:
-    print("Attempted to send message with links and buttons.")  # Optional finalization logic
-
-
+    except FloodWait as e:
+        print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
+        await asyncio.sleep(e.x)
+    except Exception as e:
+        await m.reply_text(f"An error occurred: {e}")
 
 # Handler for Channel Messages
 @StreamBot.on_message(filters.channel & ~filters.group & (filters.document | filters.video | filters.photo) & ~filters.forwarded, group=-1)
