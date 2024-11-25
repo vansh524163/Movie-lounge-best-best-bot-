@@ -83,12 +83,35 @@ async def private_receive_handler(c: Client, m: Message):
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
-        url = "https://movietop.link/upcoming-movies"
-        data = {
-            "file_name": quote_plus(get_name(log_msg)),  # Corrected syntax for file_name
-            "share_link": share_link,
-        }
-        response = requests.post(url, json=data)
+url = "https://movietop.link/upcoming-movies"
+data = {
+    "file_name": quote_plus(get_name(log_msg)),  # Corrected syntax for file_name
+    "share_link": share_link,
+}
+
+try:
+    response = requests.post(url, json=data)
+    response.raise_for_status()  # Raise an HTTPError if the response code is 4xx or 5xx
+    result = response.json()  # Parse JSON response
+
+    # Reply to the user on success
+    await m.reply_text(
+        text="✅ Your request has been processed successfully. Data stored in the server.",
+        quote=True
+    )
+
+except requests.exceptions.RequestException as e:
+    # Reply with an error if the request fails
+    await m.reply_text(
+        text=f"❌ Failed to process your request.\nError: {str(e)}",
+        quote=True
+    )
+except ValueError:
+    # Handle JSON parsing errors
+    await m.reply_text(
+        text="❌ Server response could not be parsed. Please contact support.",
+        quote=True
+    )
 
     
 
@@ -113,11 +136,6 @@ async def private_receive_handler(c: Client, m: Message):
             )
         )
 
-        await m.reply_text(
-        text="✅ Your request has been processed successfully. Please use the above buttons to proceed!",
-        quote=True
-    )
-        
 
     except FloodWait as e:
         print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
