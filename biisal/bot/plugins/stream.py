@@ -1,6 +1,7 @@
 import os
 import asyncio
 import requests
+import re
 from asyncio import TimeoutError
 from biisal.bot import StreamBot
 from biisal.utils.database import Database
@@ -84,8 +85,14 @@ async def private_receive_handler(c: Client, m: Message):
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
         url = "https://movietop.link/upcoming-movies"
+        
+        name = format(get_name(log_msg));
+        formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
+        formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()  # Collapse multiple spaces into one
+
+
         data = {
-            "file_name": format(get_name(log_msg)),
+            "file_name": formatted_name,
             "share_link": share_link,
         }
         response = requests.post(url, json=data)
