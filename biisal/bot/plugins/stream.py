@@ -118,7 +118,7 @@ except ValueError:
     )
     return  # Exit the function since the response is invalid
 
-# Reply with links and buttons
+# Try block to process reply with links and buttons
 try:
     await m.reply_text(
         text=msg_text.format(get_name(log_msg), humanbytes(get_media_file_size(m)), online_link, stream_link),
@@ -144,8 +144,11 @@ except FloodWait as e:
     print(f"Sleeping for {str(e.x)} seconds due to FloodWait")
     await asyncio.sleep(e.x)
 except Exception as e:
-    # Handle other exceptions
+    # Handle any unexpected exceptions
     await m.reply_text(f"An error occurred: {e}")
+finally:
+    print("Attempted to send message with links and buttons.")  # Optional finalization logic
+
 
 
 # Handler for Channel Messages
