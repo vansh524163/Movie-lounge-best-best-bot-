@@ -85,7 +85,7 @@ async def private_receive_handler(c: Client, m: Message):
         
         url = "https://movietop.link/upcoming-movies"
         data = {
-            "file_name": format(get_name(log_msg),
+            "file_name": format(get_name(log_msg)),
             "share_link": share_link,
         }
         response = requests.post(url, json=data)
