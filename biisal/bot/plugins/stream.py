@@ -86,7 +86,7 @@ share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_n
 # API Details
 url = "https://movietop.link/upcoming-movies"
 data = {
-    "file_name": quote_plus(get_name(log_msg)),
+    "file_name": format(get_name(log_msg),
     "share_link": share_link,
 }
 
