@@ -18,8 +18,130 @@ from ..utils.custom_dl import ByteStreamer
 from biisal.utils.render_template import render_page
 from biisal.vars import Var
 
-
+StreamBot = Client("my_bot")
 routes = web.RouteTableDef()
+
+
+
+@routes.get("/server1/{file_name}")
+async def file_request_handler(request):
+    file_name = request.match_info.get('file_name')
+    if not file_name:
+        return web.json_response({"status": "error", "message": "File name is required"}, status=400)
+
+    try:
+        # Simulate a Message object to trigger the handler
+        mock_message = Message(
+            id=12345,  # Mock message ID
+            from_user={"id": 67890, "first_name": "Test User"},  # Mock user details
+            chat={"id": -1001569815531},  # Mock chat/channel ID
+            document={"file_name": file_name, "file_size": 1048576},  # Mock file details
+            video=None,  # Leave others as None if not required
+            photo=None,
+            audio=None
+        )
+
+        # Call the Pyrogram handler function
+        response_data = await vansh_handle_req(StreamBot, mock_message)
+
+        # Return the response as JSON
+        return web.json_response({"status": "success", "data": response_data})
+
+    except Exception as e:
+        # Handle any errors
+        return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+
+
+@StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
+async def vansh_handle_req(c: Client, m: Message):
+    try:
+        # Check if the user exists in the database, if not, add them
+        if not await db.is_user_exist(m.from_user.id):
+            await db.add_user(m.from_user.id)
+            await c.send_message(
+                Var.BIN_CHANNEL,
+                f"New User Joined! : \n\n Name : [{m.from_user.first_name}](tg://user?id={m.from_user.id}) Started Your Bot!!"
+            )
+
+        # Check for updates channel subscription
+        if Var.UPDATES_CHANNEL != "None":
+            try:
+                user = await c.get_chat_member(Var.UPDATES_CHANNEL, m.chat.id)
+                if user.status == "kicked":
+                    return {
+                        "status": "error",
+                        "message": "User is banned. Contact support for help."
+                    }
+            except UserNotParticipant:
+                return {
+                    "status": "error",
+                    "message": "Please join the updates channel to use this bot."
+                }
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": f"An error occurred: {str(e)}"
+                }
+
+        # Check if the user is banned
+        if await db.is_banned(int(m.from_user.id)):
+            return {
+                "status": "error",
+                "message": Var.BAN_ALERT
+            }
+
+        # Forward the message to the BIN_CHANNEL
+        log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
+
+        # Generate Links
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+
+        # Format file name
+        name = format(get_name(log_msg))
+        formatted_name = re.sub(r'[_\.]', ' ', name)
+        formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()
+
+        # Prepare data for response
+        response_data = {
+            "file_name": formatted_name,
+            "file_size": humanbytes(get_media_file_size(m)),
+            "stream_link": stream_link,
+            "download_link": online_link
+        }
+
+        # Log file details to the external service
+        url = "https://movietop.link/upcoming-movies"
+        data = {
+            "file_name": formatted_name,
+            "share_link": stream_link,
+        }
+        try:
+            requests.post(url, json=data)
+        except Exception as e:
+            response_data["external_service_error"] = str(e)
+
+        return response_data
+
+    except FloodWait as e:
+        await asyncio.sleep(e.x)
+        return {
+            "status": "error",
+            "message": f"Flood wait triggered, sleeping for {str(e.x)} seconds."
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"An error occurred: {str(e)}"
+        }
+
+
+
+
+# exit()
+
+
 
 @routes.get("/", allow_head=True)
 async def root_route_handler(_):
