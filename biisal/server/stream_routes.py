@@ -125,21 +125,25 @@ async def vansh_handle_req(c: Client, m: Message):
         }
 
 
-# Initialize aiohttp app
+# Initialize the web application
 app = web.Application()
 app.add_routes(routes)
 
-# Start and cleanup hooks for the bot
-@app.on_startup
 async def on_startup(app):
+    """
+    Start the Pyrogram bot when the web app starts.
+    """
     await StreamBot.start()
 
-@app.on_cleanup
 async def on_cleanup(app):
+    """
+    Stop the Pyrogram bot when the web app shuts down.
+    """
     await StreamBot.stop()
-    
 
-
+# Register the startup and cleanup handlers
+app.on_startup.append(on_startup)
+app.on_cleanup.append(on_cleanup)
 # exit()
 
 
