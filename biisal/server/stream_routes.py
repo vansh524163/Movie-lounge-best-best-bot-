@@ -30,40 +30,12 @@ routes = web.RouteTableDef()
 
 
 
-@routes.get("/server1/{file_name}")
-async def file_request_handler(request):
-    file_name = request.match_info.get('file_name')
-    if not file_name:
-        return web.json_response({"status": "error", "message": "File name is required"}, status=400)
-
-    try:
-        # Simulate a Message object to trigger the handler
-        mock_message = Message(
-            id=12345,  # Mock message ID
-            from_user={"id": 67890, "first_name": "Test User"},  # Mock user details
-            chat={"id": -1001569815531},  # Mock chat/channel ID
-            document={"file_name": file_name},  # Mock file details
-            video=None,  # Leave others as None if not required
-            photo=None,
-            audio=None
-        )
-
-        # Call the Pyrogram handler function
-        response_data = await vansh_handle_req(StreamBot, mock_message)
-
-        # Return the response as JSON
-        return web.json_response({"status": "success", "data": response_data})
-
-    except Exception as e:
-        # Handle any errors
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
-
-
-
 class Var:
-    BIN_CHANNEL = -1001626107740  # Replace with your channel ID
+    BIN_CHANNEL = -1001234567890  # Replace with your channel ID
+    CHANNEL_1 = -1001887724395  # Replace with the first channel ID
+    CHANNEL_2 = -1001569815531  # Replace with the second channel ID
     UPDATES_CHANNEL = "bots_up"  # Replace with your updates channel username
-    BAN_ALERT = "You are banned from using this bot."  # Replace with your custom message
+    BAN_ALERT = "You are banned from using this bot."
 
 def humanbytes(size):
     # Convert file size to a human-readable format
@@ -72,47 +44,71 @@ def humanbytes(size):
             return f"{size:.2f} {unit}"
         size /= 1024.0
 
-def get_name(message):
-    # Get the name of the file
-    return message.document.file_name if message.document else "Unknown File"
+def format_name(name):
+    # Format file name
+    name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
+    return re.sub(r'\s+', ' ', name).strip()  # Collapse multiple spaces into one
 
-def get_media_file_size(message):
-    # Get the size of the file
-    return message.document.file_size if message.document else 0
+async def find_files(client, file_name):
+    """
+    Search two channels for files matching the given file name.
+    """
+    matched_files = []
 
-@StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
+    for channel_id in [Var.CHANNEL_1, Var.CHANNEL_2]:
+        async for message in client.search_messages(chat_id=channel_id, query=file_name, limit=5):
+            if message.document or message.video or message.audio:
+                matched_files.append(message)
+            if len(matched_files) >= 5:
+                break
+        if len(matched_files) >= 5:
+            break
+
+    return matched_files[:5]
+
+@routes.get("/server1/{file_name}")
+async def handle_route(request):
+    file_name = request.match_info.get('file_name')
+    if not file_name:
+        return web.json_response({"status": "error", "message": "File name is required"}, status=400)
+
+    # Search files in channels
+    async with StreamBot:
+        try:
+            files = await find_files(StreamBot, file_name)
+            if not files:
+                return web.json_response({"status": "error", "message": "No files found"}, status=404)
+
+            # Process files via vansh_handle_req
+            response_list = []
+            for file_message in files:
+                response = await vansh_handle_req(StreamBot, file_message)
+                response_list.append(response)
+
+            return web.json_response({"status": "success", "files": response_list})
+
+        except Exception as e:
+            return web.json_response({"status": "error", "message": str(e)})
+
 async def vansh_handle_req(c: Client, m: Message):
+    """
+    Handles a single message and generates file details.
+    """
     try:
         # Forward the message to the BIN_CHANNEL
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
         # Generate Links
-        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}"
-
-        # Format file name
-        name = get_name(log_msg)
-        formatted_name = re.sub(r'[_\.]', ' ', name)
-        formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(format_name(log_msg.document.file_name))}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(format_name(log_msg.document.file_name))}"
 
         # Prepare data for response
         response_data = {
-            "file_name": formatted_name,
-            "file_size": humanbytes(get_media_file_size(m)),
+            "file_name": format_name(log_msg.document.file_name),
+            "file_size": humanbytes(log_msg.document.file_size),
             "stream_link": stream_link,
-            "download_link": online_link
+            "download_link": online_link,
         }
-
-        # Log file details to the external service
-        url = "https://movietop.link/upcoming-movies"
-        data = {
-            "file_name": formatted_name,
-            "share_link": stream_link,
-        }
-        try:
-            requests.post(url, json=data)
-        except Exception as e:
-            response_data["external_service_error"] = str(e)
 
         return response_data
 
