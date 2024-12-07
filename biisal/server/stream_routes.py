@@ -66,7 +66,7 @@ async def find_files(client, file_name):
 
     return matched_files[:5]
 
-@routes.get("/server1/{file_name}")
+@routes.get("/x/{file_name}")
 async def handle_route(request):
     file_name = request.match_info.get('file_name')
     if not file_name:
