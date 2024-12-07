@@ -125,6 +125,19 @@ async def vansh_handle_req(c: Client, m: Message):
         }
 
 
+# Initialize aiohttp app
+app = web.Application()
+app.add_routes(routes)
+
+# Start and cleanup hooks for the bot
+@app.on_startup
+async def on_startup(app):
+    await StreamBot.start()
+
+@app.on_cleanup
+async def on_cleanup(app):
+    await StreamBot.stop()
+    
 
 
 # exit()
@@ -132,21 +145,12 @@ async def vansh_handle_req(c: Client, m: Message):
 
 
 @routes.get("/", allow_head=True)
-async def root_route_handler(_):
-    return web.json_response(
-        {
-            "server_status": "running",
-            "uptime": get_readable_time(time.time() - StartTime),
-            "telegram_bot": "@" + StreamBot.username,
-            "connected_bots": len(multi_clients),
-            "loads": dict(
-                ("bot" + str(c + 1), l)
-                for c, (_, l) in enumerate(
-                    sorted(work_loads.items(), key=lambda x: x[1], reverse=True)
-                )
-            ),
-            "version": __version__,
-        }
+async def root_route_handler(request):
+    # Display message
+    return web.Response(
+        text="Redirecting to movietop.link...",
+        status=302,  # HTTP status for redirection
+        headers={"Location": "https://movietop.link"}  # Redirect location
     )
 
 
