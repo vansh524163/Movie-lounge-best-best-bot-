@@ -8,8 +8,13 @@ import math
 import logging
 import secrets
 import mimetypes
+
 from pyrogram import Client, filters  # Ensure this import is included
 from pyrogram.types import Message
+from urllib.parse import quote_plus
+import requests
+from pyrogram.errors import FloodWait, UserNotParticipant
+
 from aiohttp import web
 from aiohttp.http_exceptions import BadStatusLine
 from biisal.bot import multi_clients, work_loads, StreamBot
@@ -37,7 +42,7 @@ async def file_request_handler(request):
             id=12345,  # Mock message ID
             from_user={"id": 67890, "first_name": "Test User"},  # Mock user details
             chat={"id": -1001569815531},  # Mock chat/channel ID
-            document={"file_name": file_name, "file_size": 1048576},  # Mock file details
+            document={"file_name": file_name},  # Mock file details
             video=None,  # Leave others as None if not required
             photo=None,
             audio=None
@@ -54,6 +59,26 @@ async def file_request_handler(request):
         return web.json_response({"status": "error", "message": str(e)}, status=500)
 
 
+
+class Var:
+    BIN_CHANNEL = -1001626107740  # Replace with your channel ID
+    UPDATES_CHANNEL = "bots_up"  # Replace with your updates channel username
+    BAN_ALERT = "You are banned from using this bot."  # Replace with your custom message
+
+def humanbytes(size):
+    # Convert file size to a human-readable format
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024.0:
+            return f"{size:.2f} {unit}"
+        size /= 1024.0
+
+def get_name(message):
+    # Get the name of the file
+    return message.document.file_name if message.document else "Unknown File"
+
+def get_media_file_size(message):
+    # Get the size of the file
+    return message.document.file_size if message.document else 0
 
 @StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
 async def vansh_handle_req(c: Client, m: Message):
@@ -97,11 +122,11 @@ async def vansh_handle_req(c: Client, m: Message):
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
         # Generate Links
-        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}"
 
         # Format file name
-        name = format(get_name(log_msg))
+        name = get_name(log_msg)
         formatted_name = re.sub(r'[_\.]', ' ', name)
         formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()
 
