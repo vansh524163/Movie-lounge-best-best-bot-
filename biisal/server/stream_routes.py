@@ -8,6 +8,8 @@ import math
 import logging
 import secrets
 import mimetypes
+from pyrogram import Client  # Ensure this import is included
+from pyrogram.types import Message
 from aiohttp import web
 from aiohttp.http_exceptions import BadStatusLine
 from biisal.bot import multi_clients, work_loads, StreamBot
