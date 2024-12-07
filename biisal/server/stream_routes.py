@@ -83,41 +83,6 @@ def get_media_file_size(message):
 @StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
 async def vansh_handle_req(c: Client, m: Message):
     try:
-        # Check if the user exists in the database, if not, add them
-        if not await db.is_user_exist(m.from_user.id):
-            await db.add_user(m.from_user.id)
-            await c.send_message(
-                Var.BIN_CHANNEL,
-                f"New User Joined! : \n\n Name : [{m.from_user.first_name}](tg://user?id={m.from_user.id}) Started Your Bot!!"
-            )
-
-        # Check for updates channel subscription
-        if Var.UPDATES_CHANNEL != "None":
-            try:
-                user = await c.get_chat_member(Var.UPDATES_CHANNEL, m.chat.id)
-                if user.status == "kicked":
-                    return {
-                        "status": "error",
-                        "message": "User is banned. Contact support for help."
-                    }
-            except UserNotParticipant:
-                return {
-                    "status": "error",
-                    "message": "Please join the updates channel to use this bot."
-                }
-            except Exception as e:
-                return {
-                    "status": "error",
-                    "message": f"An error occurred: {str(e)}"
-                }
-
-        # Check if the user is banned
-        if await db.is_banned(int(m.from_user.id)):
-            return {
-                "status": "error",
-                "message": Var.BAN_ALERT
-            }
-
         # Forward the message to the BIN_CHANNEL
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
