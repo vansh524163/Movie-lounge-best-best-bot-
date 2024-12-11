@@ -25,10 +25,7 @@ from ..utils.custom_dl import ByteStreamer
 from biisal.utils.render_template import render_page
 from biisal.vars import Var
 
-StreamBot = Client("my_bot")
 routes = web.RouteTableDef()
-
-
 
 class Var:
     BIN_CHANNEL = -1001234567890  # Replace with your channel ID
@@ -38,15 +35,13 @@ class Var:
     BAN_ALERT = "You are banned from using this bot."
 
 def humanbytes(size):
-    # Convert file size to a human-readable format
     for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
         if size < 1024.0:
             return f"{size:.2f} {unit}"
         size /= 1024.0
 
 def format_name(name):
-    # Format file name
-    name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
+    name = re.sub(r'[_\.]+', ' ', name)  # Replace underscores and dots with spaces
     return re.sub(r'\s+', ' ', name).strip()  # Collapse multiple spaces into one
 
 async def find_files(client, file_name):
@@ -72,17 +67,26 @@ async def handle_route(request):
     if not file_name:
         return web.json_response({"status": "error", "message": "File name is required"}, status=400)
 
+    # Create a new client session for this request
+    temp_bot = Client(
+        "temp_bot",
+        api_id=24503270,  # Replace with your API ID
+        api_hash="53b04d58c085c3136ceda8036ee9a1da",  # Replace with your API Hash
+        bot_token="7129593614:AAHOkScUn-Kafl-nt12yYnyDR_hxGKWBp1g",  # Replace with your Bot Token
+        storage=Client.storage.MemoryStorage()
+    )
+
     # Search files in channels
-    async with StreamBot:
+    async with temp_bot:
         try:
-            files = await find_files(StreamBot, file_name)
+            files = await find_files(temp_bot, file_name)
             if not files:
                 return web.json_response({"status": "error", "message": "No files found"}, status=404)
 
             # Process files via vansh_handle_req
             response_list = []
             for file_message in files:
-                response = await vansh_handle_req(StreamBot, file_message)
+                response = await vansh_handle_req(temp_bot, file_message)
                 response_list.append(response)
 
             return web.json_response({"status": "success", "files": response_list})
@@ -124,27 +128,25 @@ async def vansh_handle_req(c: Client, m: Message):
             "message": f"An error occurred: {str(e)}"
         }
 
-
 # Initialize the web application
 app = web.Application()
 app.add_routes(routes)
 
 async def on_startup(app):
     """
-    Start the Pyrogram bot when the web app starts.
+    Placeholder for startup actions (if needed).
     """
-    await StreamBot.start()
+    print("Application is starting...")
 
 async def on_cleanup(app):
     """
-    Stop the Pyrogram bot when the web app shuts down.
+    Placeholder for cleanup actions (if needed).
     """
-    await StreamBot.stop()
+    print("Application is shutting down...")
 
 # Register the startup and cleanup handlers
 app.on_startup.append(on_startup)
 app.on_cleanup.append(on_cleanup)
-# exit()
 
 
 
