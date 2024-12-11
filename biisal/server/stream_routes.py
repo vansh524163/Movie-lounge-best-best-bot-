@@ -8,13 +8,6 @@ import math
 import logging
 import secrets
 import mimetypes
-
-from pyrogram import Client, filters  # Ensure this import is included
-from pyrogram.types import Message
-from urllib.parse import quote_plus
-import requests
-from pyrogram.errors import FloodWait, UserNotParticipant
-
 from aiohttp import web
 from aiohttp.http_exceptions import BadStatusLine
 from biisal.bot import multi_clients, work_loads, StreamBot
@@ -25,94 +18,109 @@ from ..utils.custom_dl import ByteStreamer
 from biisal.utils.render_template import render_page
 from biisal.vars import Var
 
+StreamBot = Client("my_bot")
 routes = web.RouteTableDef()
 
-class Var:
-    BIN_CHANNEL = -1001234567890  # Replace with your channel ID
-    CHANNEL_1 = -1001887724395  # Replace with the first channel ID
-    CHANNEL_2 = -1001569815531  # Replace with the second channel ID
-    UPDATES_CHANNEL = "bots_up"  # Replace with your updates channel username
-    BAN_ALERT = "You are banned from using this bot."
 
-def humanbytes(size):
-    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024.0:
-            return f"{size:.2f} {unit}"
-        size /= 1024.0
 
-def format_name(name):
-    name = re.sub(r'[_\.]+', ' ', name)  # Replace underscores and dots with spaces
-    return re.sub(r'\s+', ' ', name).strip()  # Collapse multiple spaces into one
-
-async def find_files(client, file_name):
-    """
-    Search two channels for files matching the given file name.
-    """
-    matched_files = []
-
-    for channel_id in [Var.CHANNEL_1, Var.CHANNEL_2]:
-        async for message in client.search_messages(chat_id=channel_id, query=file_name, limit=5):
-            if message.document or message.video or message.audio:
-                matched_files.append(message)
-            if len(matched_files) >= 5:
-                break
-        if len(matched_files) >= 5:
-            break
-
-    return matched_files[:5]
-
-@routes.get("/x/{file_name}")
-async def handle_route(request):
+@routes.get("/server1/{file_name}")
+async def file_request_handler(request):
     file_name = request.match_info.get('file_name')
     if not file_name:
         return web.json_response({"status": "error", "message": "File name is required"}, status=400)
 
-    # Create a new client session for this request
-    temp_bot = Client(
-        "temp_bot",
-        api_id=24503270,  # Replace with your API ID
-        api_hash="53b04d58c085c3136ceda8036ee9a1da",  # Replace with your API Hash
-        bot_token="7129593614:AAHOkScUn-Kafl-nt12yYnyDR_hxGKWBp1g",  # Replace with your Bot Token
-        storage=Client.storage.MemoryStorage()
-    )
-
-    # Search files in channels
-    async with temp_bot:
-        try:
-            files = await find_files(temp_bot, file_name)
-            if not files:
-                return web.json_response({"status": "error", "message": "No files found"}, status=404)
-
-            # Process files via vansh_handle_req
-            response_list = []
-            for file_message in files:
-                response = await vansh_handle_req(temp_bot, file_message)
-                response_list.append(response)
-
-            return web.json_response({"status": "success", "files": response_list})
-
-        except Exception as e:
-            return web.json_response({"status": "error", "message": str(e)})
-
-async def vansh_handle_req(c: Client, m: Message):
-    """
-    Handles a single message and generates file details.
-    """
     try:
+        # Simulate a Message object to trigger the handler
+        mock_message = Message(
+            id=12345,  # Mock message ID
+            from_user={"id": 67890, "first_name": "Test User"},  # Mock user details
+            chat={"id": -1001569815531},  # Mock chat/channel ID
+            document={"file_name": file_name, "file_size": 1048576},  # Mock file details
+            video=None,  # Leave others as None if not required
+            photo=None,
+            audio=None
+        )
+
+        # Call the Pyrogram handler function
+        response_data = await vansh_handle_req(StreamBot, mock_message)
+
+        # Return the response as JSON
+        return web.json_response({"status": "success", "data": response_data})
+
+    except Exception as e:
+        # Handle any errors
+        return web.json_response({"status": "error", "message": str(e)}, status=500)
+
+
+
+@StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
+async def vansh_handle_req(c: Client, m: Message):
+    try:
+        # Check if the user exists in the database, if not, add them
+        if not await db.is_user_exist(m.from_user.id):
+            await db.add_user(m.from_user.id)
+            await c.send_message(
+                Var.BIN_CHANNEL,
+                f"New User Joined! : \n\n Name : [{m.from_user.first_name}](tg://user?id={m.from_user.id}) Started Your Bot!!"
+            )
+
+        # Check for updates channel subscription
+        if Var.UPDATES_CHANNEL != "None":
+            try:
+                user = await c.get_chat_member(Var.UPDATES_CHANNEL, m.chat.id)
+                if user.status == "kicked":
+                    return {
+                        "status": "error",
+                        "message": "User is banned. Contact support for help."
+                    }
+            except UserNotParticipant:
+                return {
+                    "status": "error",
+                    "message": "Please join the updates channel to use this bot."
+                }
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": f"An error occurred: {str(e)}"
+                }
+
+        # Check if the user is banned
+        if await db.is_banned(int(m.from_user.id)):
+            return {
+                "status": "error",
+                "message": Var.BAN_ALERT
+            }
+
         # Forward the message to the BIN_CHANNEL
         log_msg = await m.forward(chat_id=Var.BIN_CHANNEL)
 
         # Generate Links
-        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(format_name(log_msg.document.file_name))}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(format_name(log_msg.document.file_name))}"
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+
+        # Format file name
+        name = format(get_name(log_msg))
+        formatted_name = re.sub(r'[_\.]', ' ', name)
+        formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()
 
         # Prepare data for response
         response_data = {
-            "file_name": format_name(log_msg.document.file_name),
-            "file_size": humanbytes(log_msg.document.file_size),
+            "file_name": formatted_name,
+            "file_size": humanbytes(get_media_file_size(m)),
             "stream_link": stream_link,
-            "download_link": online_link,
+            "download_link": online_link
         }
+
+        # Log file details to the external service
+        url = "https://movietop.link/upcoming-movies"
+        data = {
+            "file_name": formatted_name,
+            "share_link": stream_link,
+        }
+        try:
+            requests.post(url, json=data)
+        except Exception as e:
+            response_data["external_service_error"] = str(e)
 
         return response_data
 
@@ -128,35 +136,29 @@ async def vansh_handle_req(c: Client, m: Message):
             "message": f"An error occurred: {str(e)}"
         }
 
-# Initialize the web application
-app = web.Application()
-app.add_routes(routes)
 
-async def on_startup(app):
-    """
-    Placeholder for startup actions (if needed).
-    """
-    print("Application is starting...")
 
-async def on_cleanup(app):
-    """
-    Placeholder for cleanup actions (if needed).
-    """
-    print("Application is shutting down...")
 
-# Register the startup and cleanup handlers
-app.on_startup.append(on_startup)
-app.on_cleanup.append(on_cleanup)
+# exit()
 
 
 
 @routes.get("/", allow_head=True)
-async def root_route_handler(request):
-    # Display message
-    return web.Response(
-        text="Redirecting to movietop.link...",
-        status=302,  # HTTP status for redirection
-        headers={"Location": "https://movietop.link"}  # Redirect location
+async def root_route_handler(_):
+    return web.json_response(
+        {
+            "server_status": "running",
+            "uptime": get_readable_time(time.time() - StartTime),
+            "telegram_bot": "@" + StreamBot.username,
+            "connected_bots": len(multi_clients),
+            "loads": dict(
+                ("bot" + str(c + 1), l)
+                for c, (_, l) in enumerate(
+                    sorted(work_loads.items(), key=lambda x: x[1], reverse=True)
+                )
+            ),
+            "version": __version__,
+        }
     )
 
 
