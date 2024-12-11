@@ -18,39 +18,7 @@ from ..utils.custom_dl import ByteStreamer
 from biisal.utils.render_template import render_page
 from biisal.vars import Var
 
-StreamBot = Client("my_bot")
 routes = web.RouteTableDef()
-
-
-
-@routes.get("/server1/{file_name}")
-async def file_request_handler(request):
-    file_name = request.match_info.get('file_name')
-    if not file_name:
-        return web.json_response({"status": "error", "message": "File name is required"}, status=400)
-
-    try:
-        # Simulate a Message object to trigger the handler
-        mock_message = Message(
-            id=12345,  # Mock message ID
-            from_user={"id": 67890, "first_name": "Test User"},  # Mock user details
-            chat={"id": -1001569815531},  # Mock chat/channel ID
-            document={"file_name": file_name, "file_size": 1048576},  # Mock file details
-            video=None,  # Leave others as None if not required
-            photo=None,
-            audio=None
-        )
-
-        # Call the Pyrogram handler function
-        response_data = await vansh_handle_req(StreamBot, mock_message)
-
-        # Return the response as JSON
-        return web.json_response({"status": "success", "data": response_data})
-
-    except Exception as e:
-        # Handle any errors
-        return web.json_response({"status": "error", "message": str(e)}, status=500)
-
 
 
 @StreamBot.on_message((filters.private) & (filters.document | filters.video | filters.audio | filters.photo), group=4)
