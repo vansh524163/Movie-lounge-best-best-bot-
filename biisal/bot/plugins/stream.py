@@ -32,17 +32,10 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 ‣ ɢᴇᴛ <a href="https://t.me/bots_up">ᴍᴏʀᴇ ғɪʟᴇs</a></b> 🤡"""
 
 
-@Client.on_message(filters.private & filters.text)
-async def handle_message(c: Client, m):
+@Client.on_message(filters.command("vansh"))
+async def handle_vansh_command(c: Client, m):
     try:
-        if m.text.startswith("/vansh"):
-            command = "vansh"
-        elif m.text.startswith("/x"):
-            command = "x"
-        else:
-            await m.reply_text("Invalid command. Use /vansh or /x followed by a message link.")
-            return
-
+        # Validate and extract the message link
         match = re.search(r"t\.me\/(?:c\/)?(?P<username>[^/]+)/(?P<msg_id>\d+)", m.text)
         if not match:
             await m.reply_text("Invalid link. Please send a valid Telegram message link.")
@@ -51,36 +44,30 @@ async def handle_message(c: Client, m):
         username = match.group("username")
         msg_id = int(match.group("msg_id"))
 
+        # Send initial status message
         status_message = await m.reply_text("⏳ Processing your request...")
 
+        # Fetch the channel details
         channel = await c.get_chat(username)
 
-        if command == "vansh":
-            messages = []
-            async for msg in c.get_chat_history(channel.id, offset_id=msg_id - 1, reverse=True):
-                if hasattr(msg, "media") and msg.media:
-                    messages.append(msg)
-                if len(messages) >= 25:
-                    break
+        # Fetch all media starting from the given message ID
+        messages = []
+        async for msg in c.get_chat_history(channel.id, offset_id=msg_id - 1, reverse=True):
+            if hasattr(msg, "media") and msg.media:
+                messages.append(msg)
+            if len(messages) >= 25:  # Limit to 25 files per batch
+                break
 
-            if not messages:
-                await status_message.edit_text("❌ No media files found starting from the given message.")
-                return
+        if not messages:
+            await status_message.edit_text("❌ No media files found starting from the given message.")
+            return
 
-            for i, msg in enumerate(messages, 1):
-                await process_message(c, m, msg)
-                await status_message.edit_text(f"✅ Processed {i}/{len(messages)} files. Please wait...")
-
-            await status_message.edit_text("✅ All media files processed successfully.")
-        
-        elif command == "x":
-            msg = await c.get_messages(chat_id=channel.id, message_ids=msg_id)
-            if not hasattr(msg, "media") or not msg.media:
-                await status_message.edit_text("❌ The specified message does not contain any media.")
-                return
-
+        total_files = len(messages)
+        for i, msg in enumerate(messages, 1):
             await process_message(c, m, msg)
-            await status_message.edit_text("✅ File processed successfully.")
+            await status_message.edit_text(f"✅ Processed {i}/{total_files} files. Please wait...")
+
+        await status_message.edit_text("✅ All media files processed successfully.")
 
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
