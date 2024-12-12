@@ -32,10 +32,9 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 ‣ ɢᴇᴛ <a href="https://t.me/bots_up">ᴍᴏʀᴇ ғɪʟᴇs</a></b> 🤡"""
 
 
-@Client.on_message(filters.private & filters.text, group=4)
+@Client.on_message(filters.private & filters.text)
 async def handle_message(c: Client, m):
     try:
-        # Extract command and link
         if m.text.startswith("/vansh"):
             command = "vansh"
         elif m.text.startswith("/x"):
@@ -44,7 +43,7 @@ async def handle_message(c: Client, m):
             await m.reply_text("Invalid command. Use /vansh or /x followed by a message link.")
             return
 
-        match = re.search(r"t\.me\/(?P<username>[^/]+)/(?P<msg_id>\d+)", m.text)
+        match = re.search(r"t\.me\/(?:c\/)?(?P<username>[^/]+)/(?P<msg_id>\d+)", m.text)
         if not match:
             await m.reply_text("Invalid link. Please send a valid Telegram message link.")
             return
@@ -52,73 +51,57 @@ async def handle_message(c: Client, m):
         username = match.group("username")
         msg_id = int(match.group("msg_id"))
 
-        # Send initial status message
         status_message = await m.reply_text("⏳ Processing your request...")
 
-        # Fetch the channel details
         channel = await c.get_chat(username)
 
         if command == "vansh":
-            # Fetch all media starting from the given message ID
             messages = []
             async for msg in c.get_chat_history(channel.id, offset_id=msg_id - 1, reverse=True):
-                if msg.media:
+                if hasattr(msg, "media") and msg.media:
                     messages.append(msg)
-                if len(messages) >= 25:  # Limit to 25 files per batch
+                if len(messages) >= 25:
                     break
 
             if not messages:
                 await status_message.edit_text("❌ No media files found starting from the given message.")
                 return
 
-            total_files = len(messages)
-            processed_files = 0
-
-            for msg in messages:
-                processed_files += 1
+            for i, msg in enumerate(messages, 1):
                 await process_message(c, m, msg)
-                
-                # Update status message
-                await status_message.edit_text(
-                    f"✅ Processed {processed_files}/{total_files} files. Please wait..."
-                )
+                await status_message.edit_text(f"✅ Processed {i}/{len(messages)} files. Please wait...")
 
-            await status_message.edit_text("✅ All media files have been processed successfully.")
-
+            await status_message.edit_text("✅ All media files processed successfully.")
+        
         elif command == "x":
-            # Fetch only the specific message
             msg = await c.get_messages(chat_id=channel.id, message_ids=msg_id)
-            if not msg.media:
+            if not hasattr(msg, "media") or not msg.media:
                 await status_message.edit_text("❌ The specified message does not contain any media.")
                 return
-            
+
             await process_message(c, m, msg)
-            await status_message.edit_text("✅ The specified file has been processed successfully.")
+            await status_message.edit_text("✅ File processed successfully.")
 
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
 
-
 async def process_message(c: Client, m, msg):
     try:
-        # Forward the message to BIN_CHANNEL
         log_msg = await msg.forward(chat_id=Var.BIN_CHANNEL)
 
-        # Generate links
         stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}"
         online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{log_msg.id}"
 
-        # Format file name
-        name = msg.document.file_name if msg.document else "Unknown"
+        name = msg.document.file_name if hasattr(msg, "document") and msg.document else "Unknown"
         formatted_name = re.sub(r'[_\.]', ' ', name).strip()
 
-        # Send metadata to external API
         data = {"file_name": formatted_name, "share_link": share_link}
-        requests.post("https://movietop.link/upcoming-movies", json=data)
+        response = requests.post("https://movietop.link/upcoming-movies", json=data)
+        if response.status_code != 200:
+            print(f"API error: {response.text}")
 
-        # Respond with links to the user
         await m.reply_text(
             text=f"**File Name:** {formatted_name}\n\n"
                  f"[Stream 🔺]({stream_link}) | [Download 🔻]({online_link}) | [Get File]({file_link})",
