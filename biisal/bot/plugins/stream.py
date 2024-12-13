@@ -34,6 +34,7 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 
 
+
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
@@ -98,16 +99,27 @@ async def handle_vansh_command(c: Client, m):
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
 
+def get_name(msg):
+    if hasattr(msg, "document") and msg.document:
+        return msg.document.file_name
+    elif hasattr(msg, "video") and msg.video:
+        return msg.video.file_name
+    return "Unknown"
+
+def get_hash(msg):
+    # Example hash logic; you can implement a real hash function based on your needs
+    return str(hash(msg.id))[:8]
+
 async def process_message(c: Client, m, msg):
     try:
         log_msg = await msg.forward(chat_id=Var.BIN_CHANNEL)
 
-        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}"
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{log_msg.id}"
 
-        name = msg.document.file_name if hasattr(msg, "document") and msg.document else "Unknown"
+        name = get_name(msg)
         formatted_name = re.sub(r'[_\.]', ' ', name).strip()
 
         data = {"file_name": formatted_name, "share_link": share_link}
@@ -127,6 +139,7 @@ async def process_message(c: Client, m, msg):
         )
     except Exception as e:
         await m.reply_text(f"Error processing message: {e}")
+
 
 
 
