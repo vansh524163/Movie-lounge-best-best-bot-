@@ -32,23 +32,32 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 ‣ ɢᴇᴛ <a href="https://t.me/bots_up">ᴍᴏʀᴇ ғɪʟᴇs</a></b> 🤡"""
 
 
+
+
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
         # Validate and extract the message link
-        match = re.search(r"t\.me\/(?:c\/)?(?P<username>[^/]+)/(?P<msg_id>\d+)", m.text)
+        match = re.search(r"t\.me\/(?:c\/)?(?P<username>[\w\d_]+)\/(?P<msg_id>\d+)", m.text)
         if not match:
             await m.reply_text("Invalid link. Please send a valid Telegram message link.")
             return
 
-        username = match.group("username")
+        username_or_id = match.group("username")
         msg_id = int(match.group("msg_id"))
 
-        # Send initial status message
-        status_message = await m.reply_text("⏳ Processing your request...")
+        # Check if it's a numeric ID (private group/channel)
+        if username_or_id.isdigit():
+            chat_id = int("-100" + username_or_id)  # Private group/channel ID
+        else:
+            chat_id = username_or_id  # Public group/channel username
 
         # Fetch the channel details
-        channel = await c.get_chat(username)
+        try:
+            channel = await c.get_chat(chat_id)
+        except Exception as e:
+            await m.reply_text(f"Failed to fetch chat details: {e}")
+            return
 
         # Fetch all media starting from the given message ID
         messages = []
@@ -59,15 +68,17 @@ async def handle_vansh_command(c: Client, m):
                 break
 
         if not messages:
-            await status_message.edit_text("❌ No media files found starting from the given message.")
+            await m.reply_text("\u274C No media files found starting from the given message.")
             return
 
         total_files = len(messages)
-        for i, msg in enumerate(messages, 1):
-            await process_message(c, m, msg)
-            await status_message.edit_text(f"✅ Processed {i}/{total_files} files. Please wait...")
+        status_message = await m.reply_text(f"\u23F3 Processing {total_files} files...")
 
-        await status_message.edit_text("✅ All media files processed successfully.")
+        # Process files concurrently
+        tasks = [process_message(c, m, msg) for msg in messages]
+        await asyncio.gather(*tasks)
+
+        await status_message.edit_text(f"\u2705 Successfully processed {total_files} files.")
 
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
@@ -87,16 +98,16 @@ async def process_message(c: Client, m, msg):
         data = {"file_name": formatted_name, "share_link": share_link}
         response = requests.post("https://movietop.link/upcoming-movies", json=data)
         if response.status_code != 200:
-            print(f"API error: {response.text}")
+            print(f"API error ({response.status_code}): {response.text}")
 
         await m.reply_text(
             text=f"**File Name:** {formatted_name}\n\n"
-                 f"[Stream 🔺]({stream_link}) | [Download 🔻]({online_link}) | [Get File]({file_link})",
+                 f"[Stream \u25B2]({stream_link}) | [Download \u25BC]({online_link}) | [Get File]({file_link})",
             disable_web_page_preview=True,
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Stream 🔺", url=stream_link),
-                 InlineKeyboardButton("Download 🔻", url=online_link)],
-                [InlineKeyboardButton("⚡ Share Link ⚡", url=share_link)]
+                [InlineKeyboardButton("Stream \u25B2", url=stream_link),
+                 InlineKeyboardButton("Download \u25BC", url=online_link)],
+                [InlineKeyboardButton("\u26A1 Share Link \u26A1", url=share_link)]
             ])
         )
     except Exception as e:
