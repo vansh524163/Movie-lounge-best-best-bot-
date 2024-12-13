@@ -34,19 +34,13 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 
 
-import re
-import asyncio
-import requests
-from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
         # Validate and extract the message link
         match = re.search(r"t\.me\/(?:c\/)?(?P<username>[\w\d_]+)\/(?P<msg_id>\d+)", m.text)
         if not match:
-            await m.reply_text("Invalid link. Please send a valid Telegram message link. Powered by - Vansh Yadav.")
+            await m.reply_text("Invalid link. Please send a valid Telegram message link.")
             return
 
         username_or_id = match.group("username")
@@ -65,12 +59,27 @@ async def handle_vansh_command(c: Client, m):
             await m.reply_text(f"Failed to fetch chat details: {e}")
             return
 
-        # Fetch all media starting from the given message ID
+        # Fetch the message to ensure it's accessible
+        try:
+            first_message = await c.get_messages(chat_id, msg_id)
+            if not first_message or not hasattr(first_message, "media"):
+                await m.reply_text("\u274C No media files found in the given message.")
+                return
+        except Exception as e:
+            await m.reply_text(f"Failed to fetch the starting message: {e}")
+            return
+
+        # Fetch messages one by one starting from msg_id
         messages = []
-        async for msg in c.get_chat_history(channel.id, offset_id=msg_id - 1):
-            if hasattr(msg, "media") and msg.media:
-                messages.insert(0, msg)  # Reverse the order by inserting at the start
-            if len(messages) >= 25:  # Limit to 25 files per batch
+        current_id = msg_id
+
+        for _ in range(25):  # Limit to 25 messages
+            try:
+                msg = await c.get_messages(chat_id, current_id)
+                if hasattr(msg, "media") and msg.media:
+                    messages.append(msg)
+                current_id -= 1
+            except Exception:
                 break
 
         if not messages:
@@ -118,6 +127,7 @@ async def process_message(c: Client, m, msg):
         )
     except Exception as e:
         await m.reply_text(f"Error processing message: {e}")
+
 
 
 
