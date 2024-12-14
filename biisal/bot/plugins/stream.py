@@ -38,42 +38,43 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
-        # Prompt for unlock key
+        # Unlock key
         unlock_key = "12345"  # Replace with your desired unlock key
         if len(m.command) < 2 or m.command[1] != unlock_key:
-            await m.reply_text("🔒 Please provide the correct unlock key to use this command.\nUsage: `/vansh <unlock_key>`")
+            await m.reply_text(
+                "\ud83d\udd12 Pʟᴇᴀꜱᴇ ᴘʀᴏᴠɪᴅᴇ ᴛʜᴇ ᴄᴏʀʀᴇᴄᴛ ᴜɴʟᴏᴄᴋ ᴋᴇʏ ᴛᴏ ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ.\nUsage: `/vansh <unlock_key>`"
+            )
             return
 
-        # Validate and extract the message link
-        match = re.search(r"t\.me\/(?:c\/)?(?P<username>[\w\d_]+)\/(?P<msg_id>\d+)", m.text)
+        # Validate message link
+        match = re.search(r"t\.me/(?:c/)?(?P<username>[\w\d_]+)/(?P<msg_id>\d+)", m.text)
         if not match:
-            await m.reply_text("Invalid link. Please send a valid Telegram message link.")
+            await m.reply_text("\u274c Iɴᴠᴀʟɪᴅ ʟɪɴᴋ. Pʟᴇᴀꜱᴇ ꜱᴇɴᴅ ᴀ ᴠᴀʟɪᴅ Tᴇʟᴇɢʀᴀᴍ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ.")
             return
 
         username_or_id = match.group("username")
         msg_id = int(match.group("msg_id"))
 
-        # Check if it's a numeric ID (private group/channel)
+        # Determine chat ID
         if username_or_id.isdigit():
             chat_id = int("-100" + username_or_id)  # Private group/channel ID
         else:
             chat_id = username_or_id  # Public group/channel username
 
-        # Fetch the channel details
+        # Fetch chat details
         try:
             channel = await c.get_chat(chat_id)
         except Exception as e:
-            await m.reply_text(f"Failed to fetch chat details: {e}")
+            await m.reply_text(f"Fᴀɪʟᴇᴅ ᴛᴏ ꜰᴇᴛᴄʜ ᴄʜᴀᴛ ᴅᴇᴛᴀɪʟꜱ: {e}")
             return
 
         # Prompt user for range and limit
         range_prompt = await m.reply_text(
-            "Please provide the range and limit in the format:\n`<start_msg_id> <end_msg_id> <limit>`\n"
-            "For example: `12345 12245 25`"
+            "Please provide the range and limit in the format:\n" "`<start_msg_id> <end_msg_id> <limit>`\nFor example: `12345 12245 25`"
         )
         user_response = await c.listen(m.chat.id)
         if not user_response.text:
-            await range_prompt.edit_text("❌ No response received. Cancelling.")
+            await range_prompt.edit_text("\u274c No response received. Cancelling.")
             return
 
         try:
@@ -81,7 +82,7 @@ async def handle_vansh_command(c: Client, m):
             if start_msg_id < end_msg_id or limit <= 0:
                 raise ValueError
         except ValueError:
-            await range_prompt.edit_text("❌ Invalid input. Cancelling.")
+            await range_prompt.edit_text("\u274c Invalid input. Cancelling.")
             return
 
         # Fetch messages in the specified range
@@ -99,29 +100,50 @@ async def handle_vansh_command(c: Client, m):
                 break
 
         if not messages:
-            await m.reply_text("❌ No media files found in the specified range.")
+            await m.reply_text("\u274c No media files found in the specified range.")
             return
 
         total_files = len(messages)
+        completed = 0
+        errors = 0
+        pending = total_files
+
         status_message = await m.reply_text(
-            f"⏳ Found {total_files} files. Processing...\n",
+            f"\u23f3 Found {total_files} files. Starting processing...\n\n" f"\ud83d\udd04 Total: {total_files}\n\u2714\ufe0f Completed: {completed}\n\u23f3 Pending: {pending}\n\u274c Errors: {errors}",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Cancel", callback_data="cancel_process")]]
-            )
+            ),
         )
 
-        # Process files concurrently
+        # Concurrent processing
+        async def process_message(c, m, msg):
+            nonlocal completed, errors, pending, status_message
+            try:
+                # Simulate processing
+                await asyncio.sleep(1)  # Replace with actual processing logic
+                completed += 1
+            except Exception:
+                errors += 1
+            finally:
+                pending -= 1
+                await status_message.edit_text(
+                    f"\ud83d\udd04 Total: {total_files}\n\u2714\ufe0f Completed: {completed}\n\u23f3 Pending: {pending}\n\u274c Errors: {errors}",
+                    reply_markup=InlineKeyboardMarkup(
+                        [[InlineKeyboardButton("Cancel", callback_data="cancel_process")]]
+                    ),
+                )
+
         tasks = [process_message(c, m, msg) for msg in messages]
         task = asyncio.create_task(asyncio.gather(*tasks))
 
         @StreamBot.on_callback_query(filters.regex("cancel_process"))
         async def cancel_process(_, cb):
             task.cancel()
-            await cb.message.edit("❌ Processing cancelled by user.")
+            await cb.message.edit("\u274c Processing cancelled by user.")
             return
 
         await task
-        await status_message.edit_text(f"✅ Successfully processed {total_files} files.")
+        await status_message.edit_text(f"\u2705 Successfully processed {completed} files. Errors: {errors}")
 
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
@@ -133,6 +155,7 @@ def get_name(msg):
     elif hasattr(msg, "video") and msg.video:
         return msg.video.file_name
     return "Unknown"
+
 
 async def process_message(c: Client, m, msg):
     try:
