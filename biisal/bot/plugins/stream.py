@@ -34,7 +34,6 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 
 
-
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
@@ -47,20 +46,16 @@ async def handle_vansh_command(c: Client, m):
         username_or_id = match.group("username")
         msg_id = int(match.group("msg_id"))
 
-        # Check if it's a numeric ID (private group/channel)
-        if username_or_id.isdigit():
-            chat_id = int("-100" + username_or_id)  # Private group/channel ID
-        else:
-            chat_id = username_or_id  # Public group/channel username
+        # Determine chat ID
+        chat_id = int("-100" + username_or_id) if username_or_id.isdigit() else username_or_id
 
-        # Fetch the channel details
+        # Verify accessibility of the chat and message
         try:
             channel = await c.get_chat(chat_id)
         except Exception as e:
             await m.reply_text(f"Failed to fetch chat details: {e}")
             return
 
-        # Fetch the message to ensure it's accessible
         try:
             first_message = await c.get_messages(chat_id, msg_id)
             if not first_message or not hasattr(first_message, "media"):
@@ -70,34 +65,59 @@ async def handle_vansh_command(c: Client, m):
             await m.reply_text(f"Failed to fetch the starting message: {e}")
             return
 
-        # Fetch messages one by one starting from msg_id
+        # Process messages in batches
         messages = []
         current_id = msg_id
+        batch_size = 100  # Fetch 100 messages per API call
+        total_limit = 1000000  # Limit to 1 million messages
+        processed_count = 0
 
-        for _ in range(1000000):  # Limit to 25 messages
+        status_message = await m.reply_text("\u23F3 Starting to process files...")
+
+        while processed_count < total_limit:
             try:
-                msg = await c.get_messages(chat_id, current_id)
-                if hasattr(msg, "media") and msg.media:
-                    messages.append(msg)
-                current_id -= 1
-            except Exception:
+                # Fetch batch of messages
+                batch = await c.get_messages(chat_id, list(range(current_id, current_id - batch_size, -1)))
+                if not batch:
+                    break
+
+                # Filter media messages
+                media_messages = [msg for msg in batch if hasattr(msg, "media") and msg.media]
+                messages.extend(media_messages)
+                processed_count += len(media_messages)
+
+                # Update current ID for next batch
+                current_id -= batch_size
+
+                # Break if no more messages
+                if len(batch) < batch_size:
+                    break
+            except FloodWait as e:
+                await asyncio.sleep(e.value)
+            except Exception as e:
                 break
 
         if not messages:
-            await m.reply_text("\u274C No media files found starting from the given message.")
+            await status_message.edit_text("\u274C No media files found.")
             return
 
         total_files = len(messages)
-        status_message = await m.reply_text(f"\u23F3 Processing {total_files} files...")
+        await status_message.edit_text(f"\u23F3 Processing {total_files} files...")
 
-        # Process files concurrently
-        tasks = [process_message(c, m, msg) for msg in messages]
+        # Concurrently process files
+        semaphore = asyncio.Semaphore(50)  # Limit concurrency to 50 tasks
+
+        async def process_file(msg):
+            async with semaphore:
+                await process_message(c, m, msg)
+
+        tasks = [process_file(msg) for msg in messages]
         await asyncio.gather(*tasks)
 
         await status_message.edit_text(f"\u2705 Successfully processed {total_files} files.")
-
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
+
 
 def get_name(msg):
     if hasattr(msg, "document") and msg.document:
@@ -106,38 +126,39 @@ def get_name(msg):
         return msg.video.file_name
     return "Unknown"
 
-# def get_hash(msg):
-#     # Example hash logic; you can implement a real hash function based on your needs
-#     return str(hash(msg.id))[:8]
+
 
 async def process_message(c: Client, m, msg):
     try:
+        # Forward the message to the BIN_CHANNEL
         log_msg = await msg.forward(chat_id=Var.BIN_CHANNEL)
 
-        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        # Generate links for the forwarded message
+        file_name = get_name(log_msg)
+        stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}/{quote_plus(file_name)}?hash={get_hash(log_msg)}"
+        online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}/{quote_plus(file_name)}?hash={get_hash(log_msg)}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
-        share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(file_name)}?hash={get_hash(log_msg)}"
 
-        name = get_name(msg)
-        formatted_name = re.sub(r'[_\.]', ' ', name).strip()
+        # Format file name for a cleaner display
+        formatted_name = re.sub(r'[_\.]', ' ', file_name).strip()
 
-        data = {"file_name": formatted_name, "share_link": share_link}
-        response = requests.post("https://movietop.link/upcoming-movies", json=data)
+        # Prepare data payload for API request
+        data = {
+            "file_name": formatted_name,
+            "share_link": share_link
+        }
+
+        # Send data to the external API
+        response = requests.post("https://movietop.link/upcoming-movies", json=data, timeout=10)
         if response.status_code != 200:
             print(f"API error ({response.status_code}): {response.text}")
 
-        await m.reply_text(
-            text=f"**File Name:** {formatted_name}\n\n"
-                 f"[Stream \u25B2]({stream_link}) | [Download \u25BC]({online_link}) | [Get File]({file_link})",
-            disable_web_page_preview=True,
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("Stream \u25B2", url=stream_link),
-                 InlineKeyboardButton("Download \u25BC", url=online_link)],
-                [InlineKeyboardButton("\u26A1 Share Link \u26A1", url=share_link)]
-            ])
-        )
+    except requests.exceptions.RequestException as req_error:
+        # Handle network errors during the API call
+        await m.reply_text(f"Network error while sending data to API: {req_error}")
     except Exception as e:
+        # General exception handling for other errors
         await m.reply_text(f"Error processing message: {e}")
 
 
