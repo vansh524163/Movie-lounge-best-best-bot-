@@ -74,7 +74,7 @@ async def handle_vansh_command(c: Client, m):
         messages = []
         current_id = msg_id
 
-        for _ in range(300000):  # Limit to 25 messages
+        for _ in range(1000000):  # Limit to 25 messages
             try:
                 msg = await c.get_messages(chat_id, current_id)
                 if hasattr(msg, "media") and msg.media:
