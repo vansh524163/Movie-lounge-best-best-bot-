@@ -35,46 +35,55 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 
 
+import re
+import asyncio
+import requests
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from urllib.parse import quote_plus
+
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
-        # Unlock key
+        # Unlock key validation
         unlock_key = "12345"  # Replace with your desired unlock key
         if len(m.command) < 2 or m.command[1] != unlock_key:
             await m.reply_text(
-                "\ud83d\udd12 Pʟᴇᴀꜱᴇ ᴘʀᴏᴠɪᴅᴇ ᴛʜᴇ ᴄᴏʀʀᴇᴄᴛ ᴜɴʟᴏᴄᴋ ᴋᴇʏ ᴛᴏ ᴜꜱᴇ ᴛʜɪꜱ ᴄᴏᴍᴍᴀɴᴅ.\nUsage: `/vansh <unlock_key>`"
+                "🔒 Please provide the correct unlock key to use this command.\n"
+                "Usage: `/vansh <unlock_key>`"
             )
             return
 
-        # Validate message link
+        # Validate Telegram message link
         match = re.search(r"t\.me/(?:c/)?(?P<username>[\w\d_]+)/(?P<msg_id>\d+)", m.text)
         if not match:
-            await m.reply_text("\u274c Iɴᴠᴀʟɪᴅ ʟɪɴᴋ. Pʟᴇᴀꜱᴇ ꜱᴇɴᴅ ᴀ ᴠᴀʟɪᴅ Tᴇʟᴇɢʀᴀᴍ ᴍᴇꜱꜱᴀɢᴇ ʟɪɴᴋ.")
+            await m.reply_text("❌ Invalid link. Please send a valid Telegram message link.")
             return
 
         username_or_id = match.group("username")
         msg_id = int(match.group("msg_id"))
 
         # Determine chat ID
-        if username_or_id.isdigit():
-            chat_id = int("-100" + username_or_id)  # Private group/channel ID
-        else:
-            chat_id = username_or_id  # Public group/channel username
+        chat_id = (
+            int("-100" + username_or_id) if username_or_id.isdigit() else username_or_id
+        )
 
         # Fetch chat details
         try:
             channel = await c.get_chat(chat_id)
         except Exception as e:
-            await m.reply_text(f"Fᴀɪʟᴇᴅ ᴛᴏ ꜰᴇᴛᴄʜ ᴄʜᴀᴛ ᴅᴇᴛᴀɪʟꜱ: {e}")
+            await m.reply_text(f"Failed to fetch chat details: {e}")
             return
 
         # Prompt user for range and limit
-        range_prompt = await m.reply_text(
-            "Please provide the range and limit in the format:\n" "`<start_msg_id> <end_msg_id> <limit>`\nFor example: `12345 12245 25`"
+        prompt = await m.reply_text(
+            "Please provide the range and limit in the format:\n"
+            "`<start_msg_id> <end_msg_id> <limit>`\n"
+            "For example: `12345 12245 25`"
         )
         user_response = await c.listen(m.chat.id)
         if not user_response.text:
-            await range_prompt.edit_text("\u274c No response received. Cancelling.")
+            await prompt.edit_text("❌ No response received. Cancelling.")
             return
 
         try:
@@ -82,7 +91,7 @@ async def handle_vansh_command(c: Client, m):
             if start_msg_id < end_msg_id or limit <= 0:
                 raise ValueError
         except ValueError:
-            await range_prompt.edit_text("\u274c Invalid input. Cancelling.")
+            await prompt.edit_text("❌ Invalid input. Cancelling.")
             return
 
         # Fetch messages in the specified range
@@ -100,22 +109,21 @@ async def handle_vansh_command(c: Client, m):
                 break
 
         if not messages:
-            await m.reply_text("\u274c No media files found in the specified range.")
+            await m.reply_text("❌ No media files found in the specified range.")
             return
 
         total_files = len(messages)
-        completed = 0
-        errors = 0
-        pending = total_files
+        completed, errors, pending = 0, 0, total_files
 
         status_message = await m.reply_text(
-            f"\u23f3 Found {total_files} files. Starting processing...\n\n" f"\ud83d\udd04 Total: {total_files}\n\u2714\ufe0f Completed: {completed}\n\u23f3 Pending: {pending}\n\u274c Errors: {errors}",
+            f"⏳ Found {total_files} files. Starting processing...\n\n"
+            f"🔄 Total: {total_files}\n✅ Completed: {completed}\n⏳ Pending: {pending}\n❌ Errors: {errors}",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton("Cancel", callback_data="cancel_process")]]
             ),
         )
 
-        # Concurrent processing
+        # Concurrent processing of messages
         async def process_message(c, m, msg):
             nonlocal completed, errors, pending, status_message
             try:
@@ -127,7 +135,7 @@ async def handle_vansh_command(c: Client, m):
             finally:
                 pending -= 1
                 await status_message.edit_text(
-                    f"\ud83d\udd04 Total: {total_files}\n\u2714\ufe0f Completed: {completed}\n\u23f3 Pending: {pending}\n\u274c Errors: {errors}",
+                    f"🔄 Total: {total_files}\n✅ Completed: {completed}\n⏳ Pending: {pending}\n❌ Errors: {errors}",
                     reply_markup=InlineKeyboardMarkup(
                         [[InlineKeyboardButton("Cancel", callback_data="cancel_process")]]
                     ),
@@ -139,11 +147,11 @@ async def handle_vansh_command(c: Client, m):
         @StreamBot.on_callback_query(filters.regex("cancel_process"))
         async def cancel_process(_, cb):
             task.cancel()
-            await cb.message.edit("\u274c Processing cancelled by user.")
+            await cb.message.edit("❌ Processing cancelled by user.")
             return
 
         await task
-        await status_message.edit_text(f"\u2705 Successfully processed {completed} files. Errors: {errors}")
+        await status_message.edit_text(f"✅ Successfully processed {completed} files. Errors: {errors}")
 
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
@@ -157,17 +165,16 @@ def get_name(msg):
     return "Unknown"
 
 
-async def process_message(c: Client, m, msg):
+
+async def process_media(c: Client, m, msg):
     try:
         log_msg = await msg.forward(chat_id=Var.BIN_CHANNEL)
 
         stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
         name = get_name(msg)
-        formatted_name = re.sub(r'[_\.]', ' ', name).strip()
+        formatted_name = re.sub(r"[_\.]", " ", name).strip()
 
         data = {"file_name": formatted_name, "share_link": share_link}
         response = requests.post("https://movietop.link/upcoming-movies", json=data)
@@ -176,6 +183,7 @@ async def process_message(c: Client, m, msg):
             
     except Exception as e:
         await m.reply_text(f"Error processing message: {e}")
+
 
 
 
