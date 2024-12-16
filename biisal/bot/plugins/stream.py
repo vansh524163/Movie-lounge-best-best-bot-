@@ -35,6 +35,11 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 
 
 
+# Replace with your actual values
+class Var:
+    BIN_CHANNEL = -1001626107740  # Replace with your BIN_CHANNEL ID
+    SECOND_BOTUSERNAME = "File_Press_bot"  # Replace with your bot username
+
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
@@ -140,15 +145,12 @@ async def handle_vansh_command(c: Client, m):
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
 
-
 def get_name(msg):
     if hasattr(msg, "document") and msg.document:
         return msg.document.file_name
     elif hasattr(msg, "video") and msg.video:
         return msg.video.file_name
     return "Unknown"
-
-
 
 async def process_message(c: Client, m, msg):
     try:
@@ -182,9 +184,6 @@ async def process_message(c: Client, m, msg):
     except Exception as e:
         # General exception handling for other errors
         await m.reply_text(f"Error processing message: {e}")
-
-
-
 
 
 
