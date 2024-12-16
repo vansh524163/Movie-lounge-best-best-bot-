@@ -75,7 +75,7 @@ async def handle_vansh_command(c: Client, m):
         messages = []
         last_message_id = None
 
-        status_message = await m.reply_text(⏳ Starting to process files...)
+        status_message = await m.reply_text(Starting to process files...)
         cancel_button_message = await m.reply_text(❌ "Click here to cancel", reply_markup={"inline_keyboard": [[{"text": "Cancel", "callback_data": "cancel"}]]})
 
         while processed_count < total_limit:
