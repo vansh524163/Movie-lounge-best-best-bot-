@@ -40,55 +40,53 @@ class Var:
     BIN_CHANNEL = -1001626107740  # Replace with your BIN_CHANNEL ID
     SECOND_BOTUSERNAME = "File_Press_bot"  # Replace with your bot username
 
+cancel_tasks = False 
+
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
+    global cancel_tasks
+    cancel_tasks = False  # Reset cancel flag
     try:
         start_time = time.time()  # Record start time for the process
 
-        # Validate and extract the message link
-        match = re.search(r"t\.me\/(?:c\/)?(?P<username>[\w\d_]+)\/(?P<msg_id>\d+)", m.text)
+        # Extract the channel username or ID from the user command
+        match = re.search(r"t\.me/(?P<username>[\w\d_]+)", m.text)
         if not match:
-            await m.reply_text("Invalid link. Please send a valid Telegram message link.")
+            await m.reply_text("Invalid link. Please send a valid Telegram channel link.")
             return
 
         username_or_id = match.group("username")
-        msg_id = int(match.group("msg_id"))
 
         # Determine chat ID
         chat_id = int("-100" + username_or_id) if username_or_id.isdigit() else username_or_id
 
-        # Verify accessibility of the chat and message
+        # Verify accessibility of the chat
         try:
-            await c.get_chat(chat_id)
+            chat = await c.get_chat(chat_id)
+            await m.reply_text(f"Processing all media files from channel: {chat.title}")
         except Exception as e:
             await m.reply_text(f"Failed to access the chat: {e}")
             return
 
-        # Fetch the first message
-        try:
-            first_message = await c.get_messages(chat_id, msg_id)
-            if not first_message or not hasattr(first_message, "media"):
-                await m.reply_text("\u274C No media files found in the given message.")
-                return
-        except Exception as e:
-            await m.reply_text(f"Failed to fetch the starting message: {e}")
-            return
-
-        # Start processing instantly
-        batch_size = 30  # Messages per batch
-        total_limit = 900000  # Total file limit (adjustable)
+        # Fetch all messages in the channel
+        batch_size = 100  # Number of messages to fetch per batch
+        total_limit = 10000  # Total messages to process (adjustable)
         processed_count = 0
-        current_id = msg_id
         messages = []
+        last_message_id = None
 
-        status_message = await m.reply_text("\u23F3 Starting to process files...")
+        status_message = await m.reply_text(⏳ Starting to process files...)
+        cancel_button_message = await m.reply_text(❌ "Click here to cancel", reply_markup={"inline_keyboard": [[{"text": "Cancel", "callback_data": "cancel"}]]})
 
-        # Process messages in batches
         while processed_count < total_limit:
+            if cancel_tasks:
+                await status_message.edit_text(❌ "Process cancelled by user.")
+                return
+
             elapsed_time = int(time.time() - start_time)  # Calculate elapsed time
             try:
                 # Fetch a batch of messages
-                batch = await c.get_messages(chat_id, list(range(current_id, current_id - batch_size, -1)))
+                batch = await c.get_history(chat_id, limit=batch_size, offset_id=last_message_id)
                 if not batch:
                     break
 
@@ -97,12 +95,12 @@ async def handle_vansh_command(c: Client, m):
                 messages.extend(media_messages)
                 processed_count += len(media_messages)
 
-                # Update the current ID for the next batch
-                current_id -= batch_size
+                # Update last_message_id for the next batch
+                last_message_id = batch[-1].message_id
 
                 # Update status message in real-time
                 await status_message.edit_text(
-                    f"\u23F3 Processing files...\n\n"
+                    f"⏳ Processing files...\n\n"
                     f"**Elapsed Time:** {elapsed_time}s\n"
                     f"**Files Processed:** {processed_count}\n"
                     f"**Current Batch Size:** {len(media_messages)}"
@@ -114,14 +112,14 @@ async def handle_vansh_command(c: Client, m):
             except FloodWait as e:
                 await asyncio.sleep(e.value)
                 await status_message.edit_text(
-                    f"\u23F3 **FloodWait Detected**: Retrying after {e.value} seconds..."
+                    f"⏳ **FloodWait Detected**: Retrying after {e.value} seconds..."
                 )
             except Exception as e:
-                await status_message.edit_text(f"\u274C Error during batch fetch: {e}")
+                await status_message.edit_text(f"❌ Error during batch fetch: {e}")
                 break
 
         if not messages:
-            await status_message.edit_text("\u274C No media files found.")
+            await status_message.edit_text(❌ "No media files found.")
             return
 
         # Concurrently process files
@@ -140,10 +138,17 @@ async def handle_vansh_command(c: Client, m):
 
         total_time = int(time.time() - start_time)
         await status_message.edit_text(
-            f"\u2705 Successfully processed {total_files} files in {total_time}s."
+            f"✅ Successfully processed {total_files} files in {total_time}s."
         )
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
+
+@StreamBot.on_callback_query()
+async def handle_cancel_callback(c: Client, cb):
+    global cancel_tasks
+    if cb.data == "cancel":
+        cancel_tasks = True
+        await cb.answer("Processing cancelled.")
 
 def get_name(msg):
     if hasattr(msg, "document") and msg.document:
@@ -184,6 +189,8 @@ async def process_message(c: Client, m, msg):
     except Exception as e:
         # General exception handling for other errors
         await m.reply_text(f"Error processing message: {e}")
+
+
 
 
 
