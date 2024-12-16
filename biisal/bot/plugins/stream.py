@@ -70,17 +70,20 @@ async def handle_vansh_command(c: Client, m):
 
         # Fetch all messages in the channel
         batch_size = 100  # Number of messages to fetch per batch
-        total_limit = 1000000  # Total messages to process (adjustable)
+        total_limit = 10000  # Total messages to process (adjustable)
         processed_count = 0
         messages = []
         last_message_id = None
 
-        status_message = await m.reply_text(Starting to process files...)
-        cancel_button_message = await m.reply_text("Click here to cancel", reply_markup={"inline_keyboard": [[{"text": "Cancel", "callback_data": "cancel"}]]})
+        status_message = await m.reply_text("⏳ Starting to process files...")
+        cancel_button_message = await m.reply_text(
+            "❌ Click here to cancel",
+            reply_markup={"inline_keyboard": [[{"text": "Cancel", "callback_data": "cancel"}]]}
+        )
 
         while processed_count < total_limit:
             if cancel_tasks:
-                await status_message.edit_text("Process cancelled by user.")
+                await status_message.edit_text("❌ Process cancelled by user.")
                 return
 
             elapsed_time = int(time.time() - start_time)  # Calculate elapsed time
@@ -100,7 +103,7 @@ async def handle_vansh_command(c: Client, m):
 
                 # Update status message in real-time
                 await status_message.edit_text(
-                    f"Processing files...\n\n"
+                    f"⏳ Processing files...\n\n"
                     f"**Elapsed Time:** {elapsed_time}s\n"
                     f"**Files Processed:** {processed_count}\n"
                     f"**Current Batch Size:** {len(media_messages)}"
@@ -112,14 +115,14 @@ async def handle_vansh_command(c: Client, m):
             except FloodWait as e:
                 await asyncio.sleep(e.value)
                 await status_message.edit_text(
-                    f"**FloodWait Detected**: Retrying after {e.value} seconds..."
+                    f"⏳ **FloodWait Detected**: Retrying after {e.value} seconds..."
                 )
             except Exception as e:
-                await status_message.edit_text(f"Error during batch fetch: {e}")
+                await status_message.edit_text(f"❌ Error during batch fetch: {e}")
                 break
 
         if not messages:
-            await status_message.edit_text("No media files found.")
+            await status_message.edit_text("❌ No media files found.")
             return
 
         # Concurrently process files
@@ -138,7 +141,7 @@ async def handle_vansh_command(c: Client, m):
 
         total_time = int(time.time() - start_time)
         await status_message.edit_text(
-            f"Successfully processed {total_files} files in {total_time}s."
+            f"✅ Successfully processed {total_files} files in {total_time}s."
         )
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
@@ -189,7 +192,6 @@ async def process_message(c: Client, m, msg):
     except Exception as e:
         # General exception handling for other errors
         await m.reply_text(f"Error processing message: {e}")
-
 
 
 
