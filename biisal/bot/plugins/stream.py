@@ -2,6 +2,7 @@ import os
 import asyncio
 import requests
 import re
+import time
 from asyncio import TimeoutError
 from biisal.bot import StreamBot
 from biisal.utils.database import Database
@@ -37,6 +38,8 @@ msg_text = """<b>‣ ʏᴏᴜʀ ʟɪɴᴋ ɢᴇɴᴇʀᴀᴛᴇᴅ ! 😎
 @StreamBot.on_message(filters.command("vansh"))
 async def handle_vansh_command(c: Client, m):
     try:
+        start_time = time.time()  # Record start time for the process
+
         # Validate and extract the message link
         match = re.search(r"t\.me\/(?:c\/)?(?P<username>[\w\d_]+)\/(?P<msg_id>\d+)", m.text)
         if not match:
@@ -51,11 +54,12 @@ async def handle_vansh_command(c: Client, m):
 
         # Verify accessibility of the chat and message
         try:
-            channel = await c.get_chat(chat_id)
+            await c.get_chat(chat_id)
         except Exception as e:
-            await m.reply_text(f"Failed to fetch chat details: {e}")
+            await m.reply_text(f"Failed to access the chat: {e}")
             return
 
+        # Fetch the first message
         try:
             first_message = await c.get_messages(chat_id, msg_id)
             if not first_message or not hasattr(first_message, "media"):
@@ -65,56 +69,74 @@ async def handle_vansh_command(c: Client, m):
             await m.reply_text(f"Failed to fetch the starting message: {e}")
             return
 
-        # Process messages in batches
-        messages = []
-        current_id = msg_id
-        batch_size = 100  # Fetch 100 messages per API call
-        total_limit = 1000000  # Limit to 1 million messages
+        # Start processing instantly
+        batch_size = 30  # Messages per batch
+        total_limit = 900000  # Total file limit (adjustable)
         processed_count = 0
+        current_id = msg_id
+        messages = []
 
         status_message = await m.reply_text("\u23F3 Starting to process files...")
 
+        # Process messages in batches
         while processed_count < total_limit:
+            elapsed_time = int(time.time() - start_time)  # Calculate elapsed time
             try:
-                # Fetch batch of messages
+                # Fetch a batch of messages
                 batch = await c.get_messages(chat_id, list(range(current_id, current_id - batch_size, -1)))
                 if not batch:
                     break
 
-                # Filter media messages
+                # Filter messages containing media
                 media_messages = [msg for msg in batch if hasattr(msg, "media") and msg.media]
                 messages.extend(media_messages)
                 processed_count += len(media_messages)
 
-                # Update current ID for next batch
+                # Update the current ID for the next batch
                 current_id -= batch_size
 
-                # Break if no more messages
+                # Update status message in real-time
+                await status_message.edit_text(
+                    f"\u23F3 Processing files...\n\n"
+                    f"**Elapsed Time:** {elapsed_time}s\n"
+                    f"**Files Processed:** {processed_count}\n"
+                    f"**Current Batch Size:** {len(media_messages)}"
+                )
+
+                # Stop if no more messages
                 if len(batch) < batch_size:
                     break
             except FloodWait as e:
                 await asyncio.sleep(e.value)
+                await status_message.edit_text(
+                    f"\u23F3 **FloodWait Detected**: Retrying after {e.value} seconds..."
+                )
             except Exception as e:
+                await status_message.edit_text(f"\u274C Error during batch fetch: {e}")
                 break
 
         if not messages:
             await status_message.edit_text("\u274C No media files found.")
             return
 
-        total_files = len(messages)
-        await status_message.edit_text(f"\u23F3 Processing {total_files} files...")
-
         # Concurrently process files
-        semaphore = asyncio.Semaphore(50)  # Limit concurrency to 50 tasks
+        total_files = len(messages)
+        semaphore = asyncio.Semaphore(10)  # Limit concurrent tasks to 10
 
-        async def process_file(msg):
+        async def process_file(msg, file_num):
             async with semaphore:
-                await process_message(c, m, msg)
+                try:
+                    await process_message(c, m, msg)
+                except Exception as e:
+                    await m.reply_text(f"Error in file #{file_num}: {e}")
 
-        tasks = [process_file(msg) for msg in messages]
+        tasks = [process_file(msg, i + 1) for i, msg in enumerate(messages)]
         await asyncio.gather(*tasks)
 
-        await status_message.edit_text(f"\u2705 Successfully processed {total_files} files.")
+        total_time = int(time.time() - start_time)
+        await status_message.edit_text(
+            f"\u2705 Successfully processed {total_files} files in {total_time}s."
+        )
     except Exception as e:
         await m.reply_text(f"An error occurred: {e}")
 
