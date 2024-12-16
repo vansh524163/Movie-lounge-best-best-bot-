@@ -247,22 +247,21 @@ async def channel_receive_handler(bot, broadcast):
         log_msg = await broadcast.forward(chat_id=Var.BIN_CHANNEL)
         stream_link = f"{Var.URL}watch/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        await log_msg.reply_text(
-            text=f"**Channel Name:** `{broadcast.chat.title}`\n**CHANNEL ID:** `{broadcast.chat.id}`\n**Request URL:** {stream_link}",
-            quote=True
-        )
-        await bot.edit_message_reply_markup(
-            chat_id=broadcast.chat.id,
-            message_id=broadcast.id,
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton("Stream 🔺", url=stream_link),
-                        InlineKeyboardButton('Download 🔻', url=online_link)
-                    ]
-                ]
-            )
-        )
+        share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        
+        url = "https://movietop.link/upcoming-movies"
+        
+        name = format(get_name(log_msg));
+        formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
+        formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()  # Collapse multiple spaces into one
+
+
+        data = {
+            "file_name": formatted_name,
+            "share_link": share_link,
+        }
+        response = requests.post(url, json=data)
+        
     except FloodWait as w:
         print(f"Sleeping for {str(w.x)} seconds due to FloodWait")
         await asyncio.sleep(w.x)
