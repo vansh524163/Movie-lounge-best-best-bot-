@@ -70,7 +70,7 @@ async def handle_vansh_command(c: Client, m):
 
         # Fetch all messages in the channel
         batch_size = 100  # Number of messages to fetch per batch
-        total_limit = 10000  # Total messages to process (adjustable)
+        total_limit = 1000000  # Total messages to process (adjustable)
         processed_count = 0
         messages = []
         last_message_id = None
