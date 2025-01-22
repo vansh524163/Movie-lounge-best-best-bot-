@@ -40,7 +40,7 @@ class Var(object):
     else:
         URL = "http://{}/".format(FQDN)  
     DATABASE_URL = str(getenv('DATABASE_URL', 'mongodb+srv://vansh:vansh@storefile.mqprfjm.mongodb.net/?retryWrites=true&w=majority&appName=Storefile'))
-    UPDATES_CHANNEL = str(getenv('UPDATES_CHANNEL', 'Cluster0')) 
+    UPDATES_CHANNEL = str(getenv('UPDATES_CHANNEL', 'update_vansh_x')) 
     BANNED_CHANNELS = list(set(int(x) for x in str(getenv("BANNED_CHANNELS", "")).split()))   
     BAN_CHNL = list(set(int(x) for x in str(getenv("BAN_CHNL", "")).split())) 
     BAN_ALERT = str(getenv('BAN_ALERT' , '<b>ʏᴏᴜʀ ᴀʀᴇ ʙᴀɴɴᴇᴅ ᴛᴏ ᴜsᴇ ᴛʜɪs ʙᴏᴛ.Pʟᴇᴀsᴇ ᴄᴏɴᴛᴀᴄᴛ @none_090 ᴛᴏ ʀᴇsᴏʟᴠᴇ ᴛʜᴇ ɪssᴜᴇ!!</b>'))
