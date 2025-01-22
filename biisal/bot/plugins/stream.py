@@ -250,20 +250,20 @@ async def channel_receive_handler(bot, broadcast):
         online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
-url = "https://alexhub.site/download-insert"
+        # Moved inside the try block
+        url = "https://alexhub.site/download-insert"
         
-name = format(get_name(log_msg))  # Retrieve and format the name
-formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
-formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()  # Collapse multiple spaces into one
+        name = format(get_name(log_msg))  # Retrieve and format the name
+        formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
+        formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()  # Collapse multiple spaces into one
 
-data = {
-    "file_name": formatted_name,
-    "download_link": online_link,
-}
+        data = {
+            "file_name": formatted_name,
+            "download_link": online_link,
+        }
 
-response = requests.post(url, json=data)  # Send POST request to the Laravel route
+        response = requests.post(url, json=data)  # Send POST request to the Laravel route
 
-        
     except FloodWait as w:
         print(f"Sleeping for {str(w.x)} seconds due to FloodWait")
         await asyncio.sleep(w.x)
