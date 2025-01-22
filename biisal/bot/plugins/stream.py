@@ -123,7 +123,7 @@ async def process_message(c: Client, m, msg):
         formatted_name = re.sub(r'[_\.]', ' ', name).strip()
 
         data = {"file_name": formatted_name, "download_link": online_link}
-        response = requests.post("https://alexhub.site/download-insert", json=data)
+        response = requests.post("https://alexhub.site/download/store", json=data)
         if response.status_code != 200:
             print(f"API error ({response.status_code}): {response.text}")
     except Exception as e:
@@ -186,7 +186,7 @@ async def private_receive_handler(c: Client, m: Message):
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
         # Moved inside the try block
-        url = "https://alexhub.site/download-insert"
+        url = "https://alexhub.site/download/store"
         
         name = format(get_name(log_msg))  # Retrieve and format the name
         formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
@@ -249,7 +249,7 @@ async def channel_receive_handler(bot, broadcast):
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
         # Moved inside the try block
-        url = "https://alexhub.site/download-insert"
+        url = "https://alexhub.site/download/store"
         
         name = format(get_name(log_msg))  # Retrieve and format the name
         formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
