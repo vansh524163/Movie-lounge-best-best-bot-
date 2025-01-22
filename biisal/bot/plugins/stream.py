@@ -115,15 +115,15 @@ async def process_message(c: Client, m, msg):
         log_msg = await msg.forward(chat_id=Var.BIN_CHANNEL)
 
         stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={log_msg.id}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
 
         name = get_name(msg)
         formatted_name = re.sub(r'[_\.]', ' ', name).strip()
 
-        data = {"file_name": formatted_name, "share_link": share_link}
-        response = requests.post("https://movietop.link/upcoming-movies", json=data)
+        data = {"file_name": formatted_name, "download_link": online_link}
+        response = requests.post("https://alexhub.site/download-insert", json=data)
         if response.status_code != 200:
             print(f"API error ({response.status_code}): {response.text}")
     except Exception as e:
