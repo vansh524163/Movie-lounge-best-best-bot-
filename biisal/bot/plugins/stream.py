@@ -185,18 +185,18 @@ async def private_receive_handler(c: Client, m: Message):
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
-url = "https://alexhub.site/download-insert"
+# url = "https://alexhub.site/download-insert"
         
-name = format(get_name(log_msg))  # Retrieve and format the name
-formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
-formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()  # Collapse multiple spaces into one
+# name = format(get_name(log_msg))  # Retrieve and format the name
+# formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
+# formatted_name = re.sub(r'\s+', ' ', formatted_name).strip()  # Collapse multiple spaces into one
 
-data = {
-    "file_name": formatted_name,
-    "download_link": online_link,
-}
+# data = {
+#     "file_name": formatted_name,
+#     "download_link": online_link,
+# }
 
-response = requests.post(url, json=data)  # Send POST request to the Laravel route
+# response = requests.post(url, json=data)  # Send POST request to the Laravel route
 
 
     
