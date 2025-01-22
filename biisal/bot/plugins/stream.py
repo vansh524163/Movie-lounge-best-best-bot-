@@ -181,11 +181,11 @@ async def private_receive_handler(c: Client, m: Message):
 
         # Generate Links
         stream_link = f"https://ddbots.blogspot.com/p/stream.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
-        online_link = f"https://ddbots.blogspot.com/p/download.html?link={str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
+        online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         file_link = f"https://telegram.me/{Var.SECOND_BOTUSERNAME}?start=file_{log_msg.id}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
-        url = "https://movietop.link/upcoming-movies"
+        url = "https://alexhub.site/download-insert"
         
         name = format(get_name(log_msg));
         formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
@@ -194,7 +194,7 @@ async def private_receive_handler(c: Client, m: Message):
 
         data = {
             "file_name": formatted_name,
-            "share_link": share_link,
+            "download_link": online_link,
         }
         response = requests.post(url, json=data)
 
@@ -249,7 +249,7 @@ async def channel_receive_handler(bot, broadcast):
         online_link = f"{Var.URL}{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         share_link = f"https://ddlink57.blogspot.com/{str(log_msg.id)}/{quote_plus(get_name(log_msg))}?hash={get_hash(log_msg)}"
         
-        url = "https://movietop.link/upcoming-movies"
+        url = "https://alexhub.site/download-insert"
         
         name = format(get_name(log_msg));
         formatted_name = re.sub(r'[_\.]', ' ', name)  # Replace underscores and dots with spaces
@@ -258,7 +258,7 @@ async def channel_receive_handler(bot, broadcast):
 
         data = {
             "file_name": formatted_name,
-            "share_link": share_link,
+            "download_link": online_link,
         }
         response = requests.post(url, json=data)
         
